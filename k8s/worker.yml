@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: automation-worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: automation-worker
+  template:
+    metadata:
+      labels:
+        app: automation-worker
+    spec:
+      containers:
+        - name: worker
+          image: automation-backend:latest
+          imagePullPolicy: IfNotPresent
+          command: ["celery", "-A", "app.tasks.celery_app", "worker", "--loglevel=INFO", "-Q", "workflows"]
+          envFrom:
+            - secretRef:
+                name: automation-secrets
+

@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: automation-backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: automation-backend
+  template:
+    metadata:
+      labels:
+        app: automation-backend
+    spec:
+      containers:
+        - name: backend
+          image: automation-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - secretRef:
+                name: automation-secrets
+          readinessProbe:
+            httpGet:
+              path: /api/v1/ready
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 20
+
