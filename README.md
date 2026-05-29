@@ -4,20 +4,38 @@ Production-oriented backend platform for finance, analytics, operations, and cus
 
 ## Architecture
 
-```text
-Clients / Dashboards
-       |
-FastAPI API Gateway  -- JWT, RBAC, validation, rate limiting, OpenAPI
-       |
-Workflow Orchestrator -- LangGraph state routing, retries, pause/resume
-       |
-Agent Service -- Finance, Analytics, Support, Operations, Supervisor routing
-       |
-PostgreSQL + Redis -- persistence, cache, Pub/Sub, queues, session state
-       |
-Celery Workers -- distributed async workflow execution
-       |
-Prometheus + Grafana -- metrics, latency, failure rate, queue health
+```mermaid
+graph TB
+    Client["🖥️ Clients / Dashboards"]
+    GW["FastAPI API Gateway<br/>JWT | RBAC | Rate Limit"]
+    Auth["Auth Service<br/>Login | Register | Token"]
+    WF["Workflow Service<br/>CRUD | Trigger | Execute"]
+    WFO["Workflow Orchestrator<br/>LangGraph State Machine"]
+    AgentSvc["Agent Service<br/>Finance | Analytics<br/>Support | Operations"]
+    Agents["Agent Framework<br/>CrewAI | AutoGen | LangGraph"]
+    DB["PostgreSQL<br/>Users | Workflows | Tickets"]
+    Cache["Redis Cache<br/>Session | Rate Limit | Pub/Sub"]
+    Queue["Celery Queue<br/>Distributed Tasks"]
+    Monitor["Prometheus<br/>Metrics & Monitoring"]
+    Grafana["📊 Grafana Dashboard<br/>Visualization & Alerts"]
+    
+    Client -->|HTTP/WS| GW
+    GW --> Auth
+    GW --> WF
+    WF --> WFO
+    WFO --> AgentSvc
+    AgentSvc --> Agents
+    Agents --> Cache
+    WFO --> Queue
+    Queue --> Agents
+    Auth --> DB
+    WF --> DB
+    WFO --> DB
+    Agents --> Monitor
+    GW --> Monitor
+    Monitor --> Grafana
+    Cache -.->|Pub/Sub| Agents
+    DB -.->|Async| Cache
 ```
 
 The code is organized around thin API routers, service-layer business logic, repository-based persistence, and framework adapters for CrewAI, LangGraph, AutoGen, and LangChain-friendly future tooling.
@@ -205,14 +223,241 @@ Run a worker locally:
 celery -A app.tasks.celery_app worker --loglevel=INFO -Q workflows
 ```
 
+## File Structure
+
+```
+multi-agent-business-automation-system-build/
+├── app/                          # Main application package
+│   ├── main.py                   # FastAPI app initialization & middleware setup
+│   ├── tasks.py                  # Celery task definitions for distributed execution
+│   ├── api/                      # API route handlers
+│   │   ├── v1/
+│   │   │   ├── router.py         # Main router - mounts all v1 endpoints
+│   │   │   ├── auth.py           # Authentication endpoints (login, register, me)
+│   │   │   ├── workflows.py      # Workflow CRUD & execution (trigger, pause, resume)
+│   │   │   ├── agents.py         # Agent registry & execution
+│   │   │   ├── analytics.py      # Analytics & metrics endpoints
+│   │   │   ├── tickets.py        # Support ticket management
+│   │   │   ├── notifications.py  # WebSocket notifications
+│   │   │   └── health.py         # Health & readiness checks
+│   │   └── deps.py               # Dependency injection & security
+│   ├── agents/                   # AI Agent implementations
+│   │   ├── base.py               # Abstract base agent class
+│   │   ├── finance.py            # Finance automation agent
+│   │   ├── analytics.py          # Analytics agent
+│   │   ├── support.py            # Support & ticket agent
+│   │   ├── operations.py         # Operations automation agent
+│   │   ├── registry.py           # Agent registry & factory
+│   │   ├── crew_adapter.py       # CrewAI framework adapter
+│   │   └── autogen_adapter.py    # AutoGen framework adapter
+│   ├── workflows/                # Workflow orchestration (LangGraph)
+│   │   ├── state.py              # Workflow state definitions
+│   │   └── langgraph_orchestrator.py  # LangGraph state machine & routing
+│   ├── services/                 # Business logic layer
+│   │   ├── auth_service.py       # Authentication & JWT logic
+│   │   ├── workflow_service.py   # Workflow management logic
+│   │   ├── agent_service.py      # Agent execution & coordination
+│   │   ├── analytics_service.py  # Analytics aggregation
+│   │   ├── ticket_service.py     # Support ticket processing
+│   │   └── notification_service.py # Real-time notifications
+│   ├── repositories/             # Data access layer (Repository pattern)
+│   │   ├── base.py               # Generic async repository base
+│   │   ├── users.py              # User CRUD operations
+│   │   ├── workflows.py          # Workflow persistence
+│   │   ├── agents.py             # Agent metadata storage
+│   │   ├── tickets.py            # Support ticket storage
+│   │   └── analytics.py          # Analytics data queries
+│   ├── models/                   # SQLAlchemy ORM models
+│   │   ├── user.py               # User model with roles
+│   │   ├── workflow.py           # Workflow definition & execution tracking
+│   │   ├── workflow_task.py      # Workflow task steps
+│   │   ├── agent.py              # Agent metadata
+│   │   ├── support_ticket.py     # Support ticket model
+│   │   ├── analytics_report.py   # Analytics report storage
+│   │   └── enums.py              # Status, role, and type enums
+│   ├── schemas/                  # Pydantic request/response models
+│   │   ├── auth.py               # Auth request/response schemas
+│   │   ├── user.py               # User schemas
+│   │   ├── workflow.py           # Workflow request/response schemas
+│   │   ├── agent.py              # Agent schemas
+│   │   ├── ticket.py             # Ticket schemas
+│   │   ├── analytics.py          # Analytics schemas
+│   │   └── common.py             # Common/shared schemas
+│   ├── core/                     # Configuration & utilities
+│   │   ├── config.py             # Settings from environment
+│   │   ├── security.py           # JWT token & password hashing
+│   │   ├── logging.py            # Structured JSON logging
+│   │   └── exceptions.py         # Custom exception types
+│   ├── db/                       # Database & cache setup
+│   │   ├── session.py            # SQLAlchemy async session factory
+│   │   ├── base.py               # Declarative base & metadata
+│   │   └── redis.py              # Redis connection & utilities
+│   ├── middleware/               # HTTP middleware
+│   │   ├── request_context.py    # Request context tracking
+│   │   └── rate_limit.py         # Rate limiting middleware
+│   ├── monitoring/               # Observability
+│   │   └── metrics.py            # Prometheus metrics definitions
+│   └── utils/                    # Utility functions
+├── alembic/                      # Database migrations (SQLAlchemy)
+│   ├── versions/                 # Migration scripts
+│   └── env.py                    # Migration configuration
+├── tests/                        # Unit & integration tests
+│   ├── test_*.py                 # Test modules
+│   └── conftest.py               # Pytest fixtures
+├── docker/                       # Docker build scripts
+│   └── Dockerfile.*.txt          # Service-specific Dockerfiles (optional)
+├── k8s/                          # Kubernetes manifests
+│   ├── deployment.yaml           # FastAPI deployment
+│   ├── worker.yaml               # Celery worker deployment
+│   ├── service.yaml              # Service exposure
+│   ├── ingress.yaml              # Ingress routing
+│   ├── configmap.yaml            # Environment configuration
+│   └── secrets.yaml              # Secret management
+├── nginx/                        # Nginx reverse proxy config
+│   └── nginx.conf                # Proxy, SSL, routing configuration
+├── prometheus/                   # Prometheus configuration
+│   └── prometheus.yml            # Metrics scrape config
+├── grafana/                      # Grafana provisioning
+│   ├── provisioning/dashboards/  # Dashboard JSON definitions
+│   └── provisioning/datasources/ # Data source configurations
+├── .github/workflows/            # GitHub Actions CI/CD
+│   ├── test.yml                  # Run tests & linting on PR
+│   └── deploy.yml                # Deploy on main branch
+├── docker-compose.yml            # Local dev environment
+├── docker-compose.prod.yml       # Production deployment
+├── Dockerfile                    # FastAPI app Docker image
+├── pyproject.toml                # Python project config & dependencies
+├── requirements.txt              # Python dependencies
+├── alembic.ini                   # Alembic configuration
+├── .env.example                  # Environment template
+├── .gitignore                    # Git ignore rules
+└── README.md                     # This file
+```
+
+## Execution Workflow
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant FastAPI as FastAPI Gateway
+    participant Auth as Auth Service
+    participant WF as Workflow Service
+    participant Orch as LangGraph Orchestrator
+    participant Agent as Agent Service
+    participant Queue as Celery Queue
+    participant DB as PostgreSQL
+    participant Cache as Redis Cache
+    participant Metrics as Prometheus
+    
+    Client->>FastAPI: POST /workflows (create)
+    FastAPI->>Auth: Verify JWT token
+    Auth-->>FastAPI: Token valid
+    FastAPI->>WF: Store workflow definition
+    WF->>DB: Save workflow record
+    DB-->>WF: Workflow ID
+    WF-->>FastAPI: Workflow created (202)
+    FastAPI-->>Client: Return workflow ID
+    
+    Client->>FastAPI: POST /workflows/{id}/trigger (queue execution)
+    FastAPI->>Auth: Verify JWT token
+    FastAPI->>Orch: Queue workflow execution
+    Orch->>Queue: Add task to Celery queue
+    Queue-->>Orch: Task acknowledged
+    Orch->>DB: Update status to QUEUED
+    Orch-->>FastAPI: Task ID
+    FastAPI-->>Client: Return task ID (202)
+    
+    Queue->>Agent: Dequeue & execute workflow
+    Agent->>Orch: Initialize workflow state
+    Orch->>Agent: Route to appropriate agent (Finance/Analytics/Support/Operations)
+    Agent->>Cache: Check cached dependencies
+    Agent->>Agent: Execute business logic
+    Agent->>Metrics: Record execution metrics
+    Agent->>DB: Store execution results
+    DB-->>Agent: Confirmed
+    Agent->>Cache: Update result cache
+    Agent-->>Orch: Execution complete
+    Orch->>DB: Update workflow status to COMPLETED
+    
+    Client->>FastAPI: GET /workflows/{id} (poll status)
+    FastAPI->>DB: Fetch workflow record
+    DB-->>FastAPI: Workflow data + results
+    FastAPI-->>Client: Return workflow data (200)
+    
+    Client->>FastAPI: WS /notifications/workflows/{id}/ws (subscribe)
+    FastAPI->>Cache: Subscribe to Pub/Sub channel
+    Cache-->>FastAPI: Subscription confirmed
+    Agent->>Cache: Publish execution update
+    Cache->>FastAPI: Broadcast update
+    FastAPI-->>Client: Send WebSocket message
+```
+
+## Request Processing Flow
+
+```mermaid
+graph LR
+    A["HTTP Request"] -->|middleware| B["Request Context<br/>Logging"]
+    B -->|middleware| C["Rate Limit<br/>Check"]
+    C -->|JWT validation| D["Security Layer<br/>Token Extraction"]
+    D -->|authorized| E["Route Handler<br/>Dependency Injection"]
+    E -->|get user| F["Auth Service"]
+    E -->|business logic| G["Workflow/Agent/Ticket<br/>Service"]
+    F -->|query| H["User Repository"]
+    G -->|query/update| I["Workflow/Agent/Ticket<br/>Repository"]
+    H -->|SQL| J["PostgreSQL"]
+    I -->|SQL| J
+    G -->|cache| K["Redis Cache"]
+    G -->|async| L["Celery Queue"]
+    G -->|emit| M["Prometheus Metrics"]
+    J -.->|results| G
+    K -.->|cached data| G
+    G -->|response| N["Response Schema<br/>Validation"]
+    N -->|success| O["HTTP Response 200"]
+    C -->|rate limited| P["HTTP Response 429"]
+    D -->|unauthorized| Q["HTTP Response 401"]
+    E -->|validation error| R["HTTP Response 422"]
+```
+
+## Agent Execution Flow
+
+```mermaid
+stateDiagram-v2
+    [*] --> Initialize
+    Initialize --> RouteAgent: Determine agent type
+    
+    RouteAgent --> Finance: workflow_type == 'finance'
+    RouteAgent --> Analytics: workflow_type == 'analytics'
+    RouteAgent --> Support: workflow_type == 'support'
+    RouteAgent --> Operations: workflow_type == 'operations'
+    
+    Finance --> LoadContext: Load workflow input<br/>& context data
+    Analytics --> LoadContext
+    Support --> LoadContext
+    Operations --> LoadContext
+    
+    LoadContext --> ExecuteAgent: Send to LLM or<br/>local fallback
+    ExecuteAgent --> CrewAI: Framework: CrewAI
+    ExecuteAgent --> AutoGen: Framework: AutoGen
+    ExecuteAgent --> Deterministic: Framework: Local<br/>Fallback
+    
+    CrewAI --> ProcessOutput: Parse results
+    AutoGen --> ProcessOutput
+    Deterministic --> ProcessOutput
+    
+    ProcessOutput --> UpdateDB: Persist execution<br/>results
+    UpdateDB --> PublishMetrics: Record metrics
+    PublishMetrics --> Notify: Send WebSocket<br/>notification
+    Notify --> [*]
+```
+
 ## Notes on AI Frameworks
 
 The platform exposes explicit integration points for:
 
-- LangGraph: workflow state transitions, conditional routing, and parallel execution
-- CrewAI: collaborative business-agent crews
-- AutoGen: conversational multi-agent execution
-- LangChain: dependency included for future tool/RAG integrations
+- **LangGraph**: workflow state transitions, conditional routing, and parallel execution
+- **CrewAI**: collaborative business-agent crews with role-based delegation
+- **AutoGen**: conversational multi-agent execution with dynamic conversation
+- **LangChain**: dependency included for future tool/RAG integrations
 
 The code includes deterministic fallbacks so the backend remains testable and deployable even before external LLM credentials or production agent prompts are configured.
 
