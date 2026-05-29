@@ -19,4 +19,3 @@ class NotificationService:
 
     async def queue_size(self) -> int:
         return int(await self.redis.llen("celery") or 0)
-

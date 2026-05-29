@@ -23,4 +23,3 @@ class AgentRegistry:
 
 
 agent_registry = AgentRegistry()
-

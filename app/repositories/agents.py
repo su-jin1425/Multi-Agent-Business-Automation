@@ -11,4 +11,3 @@ class AgentRepository(BaseRepository[Agent]):
     async def get_by_type(self, agent_type: AgentType) -> Agent | None:
         result = await self.session.execute(select(Agent).where(Agent.agent_type == agent_type))
         return result.scalar_one_or_none()
-

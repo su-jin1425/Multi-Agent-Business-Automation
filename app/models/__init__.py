@@ -6,4 +6,3 @@ from app.models.workflow import Workflow
 from app.models.workflow_task import WorkflowTask
 
 __all__ = ["Agent", "AnalyticsReport", "SupportTicket", "User", "Workflow", "WorkflowTask"]
-

@@ -13,7 +13,6 @@ from app.schemas.workflow import WorkflowCreate, WorkflowRead, WorkflowTriggerRe
 from app.services.workflow_service import WorkflowService
 from app.tasks import execute_workflow_task
 
-
 router = APIRouter()
 
 
@@ -124,4 +123,3 @@ async def retry_workflow(
     _: User = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER)),
 ) -> WorkflowRead:
     return await service(session, redis).retry(workflow_id)
-

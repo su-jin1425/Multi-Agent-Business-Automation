@@ -9,7 +9,6 @@ from app.models.enums import UserRole
 from app.schemas.ticket import TicketCreate, TicketRead, TicketUpdate
 from app.services.ticket_service import TicketService
 
-
 router = APIRouter()
 
 
@@ -34,4 +33,3 @@ async def update_ticket(
     _: object = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.SUPPORT_EXECUTIVE)),
 ) -> TicketRead:
     return await TicketService(session).update(ticket_id, payload)
-

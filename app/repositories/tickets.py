@@ -15,4 +15,3 @@ class TicketRepository(BaseRepository[SupportTicket]):
             select(SupportTicket).where(SupportTicket.status.in_([TicketStatus.OPEN, TicketStatus.IN_PROGRESS]))
         )
         return result.scalars().all()
-

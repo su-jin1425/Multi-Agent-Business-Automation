@@ -10,15 +10,12 @@ from app.core.config import settings
 from app.db.session import get_db_session
 from app.schemas.common import HealthResponse
 
-
 router = APIRouter()
 
 
 @router.get("/health", response_model=HealthResponse)
 async def health_check() -> HealthResponse:
-    return HealthResponse(
-        status="ok", environment=settings.environment, version="1.0.0", timestamp=datetime.now(UTC)
-    )
+    return HealthResponse(status="ok", environment=settings.environment, version="1.0.0", timestamp=datetime.now(UTC))
 
 
 @router.get("/ready")
@@ -26,4 +23,3 @@ async def readiness(session: AsyncSession = Depends(get_db_session), redis: Redi
     await session.execute(text("SELECT 1"))
     await redis.ping()
     return {"status": "ready"}
-

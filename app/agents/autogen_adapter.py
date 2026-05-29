@@ -25,4 +25,3 @@ class AutoGenAdapter:
 
 
 autogen_adapter = AutoGenAdapter()
-

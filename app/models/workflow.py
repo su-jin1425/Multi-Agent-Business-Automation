@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, Enum, ForeignKey, JSON, String, func
+from sqlalchemy import JSON, DateTime, Enum, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -14,9 +14,7 @@ class Workflow(Base):
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     workflow_name: Mapped[str] = mapped_column(String(160), index=True)
     workflow_type: Mapped[WorkflowType] = mapped_column(Enum(WorkflowType), index=True)
-    status: Mapped[WorkflowStatus] = mapped_column(
-        Enum(WorkflowStatus), default=WorkflowStatus.PENDING, index=True
-    )
+    status: Mapped[WorkflowStatus] = mapped_column(Enum(WorkflowStatus), default=WorkflowStatus.PENDING, index=True)
     created_by: Mapped[UUID] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     input_payload: Mapped[dict] = mapped_column(JSON, default=dict)
     result_payload: Mapped[dict] = mapped_column(JSON, default=dict)
@@ -27,4 +25,3 @@ class Workflow(Base):
 
     creator = relationship("User", back_populates="workflows")
     tasks = relationship("WorkflowTask", back_populates="workflow", cascade="all, delete-orphan")
-

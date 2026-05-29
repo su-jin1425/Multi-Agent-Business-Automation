@@ -19,4 +19,3 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     workflows = relationship("Workflow", back_populates="creator")
-

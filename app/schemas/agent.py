@@ -26,4 +26,3 @@ class AgentExecuteResponse(BaseModel):
     agent_type: AgentType
     result: dict
     delegated_to: list[str] = Field(default_factory=list)
-

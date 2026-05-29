@@ -49,4 +49,3 @@ class WorkflowTriggerResponse(BaseModel):
     status: WorkflowStatus
     celery_task_id: str | None = None
     message: str
-

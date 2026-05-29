@@ -4,6 +4,7 @@ Revision ID: 0001_initial_schema
 Revises:
 Create Date: 2026-05-28
 """
+
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
@@ -28,7 +29,7 @@ ticket_status = postgresql.ENUM("OPEN", "IN_PROGRESS", "ESCALATED", "RESOLVED", 
 
 def upgrade() -> None:
     bind = op.get_bind()
-    
+
     # Clear alembic version to force fresh migration
 
     op.create_table(

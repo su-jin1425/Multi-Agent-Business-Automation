@@ -21,4 +21,3 @@ class OperationsAgent(BusinessAgent):
                 "routing_decision": "parallelize-independent-tasks",
             },
         )
-

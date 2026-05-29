@@ -8,7 +8,6 @@ from app.db.redis import redis_client
 from app.db.session import AsyncSessionLocal
 from app.services.workflow_service import WorkflowService
 
-
 celery_app = Celery(
     "business_automation",
     broker=settings.broker_url,

@@ -55,4 +55,3 @@ class TicketStatus(StrEnum):
     ESCALATED = "escalated"
     RESOLVED = "resolved"
     CLOSED = "closed"
-

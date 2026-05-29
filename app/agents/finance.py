@@ -29,4 +29,3 @@ class FinanceAgent(BusinessAgent):
             },
             delegated_to=delegated,
         )
-

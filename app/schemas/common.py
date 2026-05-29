@@ -23,4 +23,3 @@ class EventPayload(BaseModel):
     workflow_id: UUID | None = None
     event_type: str
     payload: dict
-

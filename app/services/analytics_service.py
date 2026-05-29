@@ -59,4 +59,3 @@ class AnalyticsService:
                 )
             )
         return rows
-

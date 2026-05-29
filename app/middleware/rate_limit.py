@@ -24,4 +24,3 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if count > settings.rate_limit_per_minute:
             return Response("Rate limit exceeded", status_code=status.HTTP_429_TOO_MANY_REQUESTS)
         return await call_next(request)
-

@@ -1,7 +1,6 @@
 from app.agents.base import AgentContext, AgentResult, BusinessAgent
 from app.models.enums import AgentType
 
-
 NEGATIVE_TERMS = {"angry", "bad", "broken", "cancel", "complaint", "failed", "late", "refund", "terrible"}
 
 
@@ -28,4 +27,3 @@ class SupportAgent(BusinessAgent):
             data={"sentiment": sentiment, "escalate": needs_escalation, "response_draft": response},
             delegated_to=[AgentType.OPERATIONS] if needs_escalation else [],
         )
-

@@ -41,4 +41,3 @@ class TicketService:
         await self.session.commit()
         await self.session.refresh(ticket)
         return ticket
-

@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Generic, TypeVar
+from typing import TypeVar
 from uuid import UUID
 
 from sqlalchemy import Select, select
@@ -7,11 +7,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.base import Base
 
-
 ModelT = TypeVar("ModelT", bound=Base)
 
 
-class BaseRepository(Generic[ModelT]):
+class BaseRepository[ModelT]:
     model: type[ModelT]
 
     def __init__(self, session: AsyncSession) -> None:
@@ -21,7 +20,9 @@ class BaseRepository(Generic[ModelT]):
         return await self.session.get(self.model, item_id)
 
     async def list(self, *, limit: int = 100, offset: int = 0) -> Sequence[ModelT]:
-        result = await self.session.execute(select(self.model).offset(offset).limit(limit))
+        result = await self.session.execute(
+            select(self.model).offset(offset).limit(limit)
+        )
         return result.scalars().all()
 
     async def create(self, **values: object) -> ModelT:
@@ -39,4 +40,3 @@ class BaseRepository(Generic[ModelT]):
         stmt = statement or select(self.model)
         result = await self.session.execute(stmt)
         return len(result.scalars().all())
-

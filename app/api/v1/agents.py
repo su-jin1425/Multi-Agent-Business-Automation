@@ -11,7 +11,6 @@ from app.repositories.agents import AgentRepository
 from app.schemas.agent import AgentExecuteRequest, AgentExecuteResponse, AgentRead
 from app.services.agent_service import AgentService
 
-
 router = APIRouter()
 
 
@@ -42,4 +41,3 @@ async def execute_agent(
     _: object = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.ANALYST, UserRole.SUPPORT_EXECUTIVE)),
 ) -> AgentExecuteResponse:
     return await AgentService(session).execute(payload)
-

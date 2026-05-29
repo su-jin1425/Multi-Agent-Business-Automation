@@ -31,4 +31,3 @@ class BusinessAgent(ABC):
     @abstractmethod
     async def execute(self, context: AgentContext) -> AgentResult:
         """Execute an autonomous business task."""
-

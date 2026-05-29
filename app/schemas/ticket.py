@@ -28,4 +28,3 @@ class TicketRead(ORMModel):
     response_draft: str | None
     created_at: datetime
     updated_at: datetime
-

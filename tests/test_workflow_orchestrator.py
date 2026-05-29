@@ -24,4 +24,3 @@ async def test_hybrid_workflow_runs_multiple_agents() -> None:
 
     assert state["status"] == WorkflowStatus.COMPLETED
     assert len(state["agent_results"]) >= 4
-

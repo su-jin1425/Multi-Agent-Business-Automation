@@ -16,4 +16,3 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         response.headers["X-Process-Time"] = f"{perf_counter() - started:.4f}"
         structlog.contextvars.clear_contextvars()
         return response
-

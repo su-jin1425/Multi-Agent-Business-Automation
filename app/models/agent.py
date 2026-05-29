@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime, Enum, JSON, String, func
+from sqlalchemy import JSON, DateTime, Enum, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -18,4 +18,3 @@ class Agent(Base):
     capabilities: Mapped[list[str]] = mapped_column(JSON, default=list)
     last_active: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-

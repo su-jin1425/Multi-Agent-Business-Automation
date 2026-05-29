@@ -22,4 +22,3 @@ class AgentPerformance(BaseModel):
     completed_tasks: int
     failed_tasks: int
     average_latency_ms: float
-

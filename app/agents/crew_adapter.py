@@ -26,4 +26,3 @@ class CrewAIAdapter:
 
 
 crew_adapter = CrewAIAdapter()
-

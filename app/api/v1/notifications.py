@@ -4,7 +4,6 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from app.db.redis import redis_client
 
-
 router = APIRouter()
 
 
@@ -22,4 +21,3 @@ async def workflow_events(websocket: WebSocket, workflow_id: UUID) -> None:
     finally:
         await pubsub.unsubscribe(f"workflow:{workflow_id}")
         await pubsub.close()
-

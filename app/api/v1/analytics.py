@@ -9,7 +9,6 @@ from app.schemas.analytics import AgentPerformance, OverviewMetrics, WorkflowMet
 from app.services.analytics_service import AnalyticsService
 from app.services.notification_service import NotificationService
 
-
 router = APIRouter()
 
 
@@ -42,4 +41,3 @@ async def agent_performance(
     _: object = Depends(require_roles(UserRole.ADMIN, UserRole.MANAGER, UserRole.ANALYST)),
 ) -> list[AgentPerformance]:
     return await analytics_service(session, redis).agent_performance()
-

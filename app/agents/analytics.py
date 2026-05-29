@@ -26,4 +26,3 @@ class AnalyticsAgent(BusinessAgent):
                 "chart_spec": {"type": "line", "series": list(metrics.items())},
             },
         )
-

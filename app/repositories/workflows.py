@@ -45,4 +45,3 @@ class WorkflowTaskRepository(BaseRepository[WorkflowTask]):
             select(WorkflowTask).where(WorkflowTask.workflow_id == workflow_id).order_by(WorkflowTask.started_at)
         )
         return result.scalars().all()
-

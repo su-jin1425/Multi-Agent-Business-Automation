@@ -11,4 +11,3 @@ class WorkflowState(TypedDict, total=False):
     agent_results: list[dict[str, Any]]
     next_agents: list[AgentType]
     errors: list[str]
-

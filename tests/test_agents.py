@@ -28,4 +28,3 @@ async def test_support_agent_escalates_refund_issue() -> None:
     assert result.data["sentiment"] == "negative"
     assert result.data["escalate"] is True
     assert AgentType.OPERATIONS in result.delegated_to
-

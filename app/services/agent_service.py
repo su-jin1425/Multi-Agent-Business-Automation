@@ -42,9 +42,7 @@ class AgentService:
 
         result = await agent.execute(context)
 
-        agent_response_time.labels(
-            agent_type=payload.agent_type.value
-        ).observe(time.perf_counter() - started)
+        agent_response_time.labels(agent_type=payload.agent_type.value).observe(time.perf_counter() - started)
 
         db_agent = await self.agents.get_by_type(payload.agent_type)
         if db_agent:
