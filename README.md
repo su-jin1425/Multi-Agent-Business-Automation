@@ -6,7 +6,7 @@ Production-oriented backend platform for finance, analytics, operations, and cus
 
 ```mermaid
 graph TB
-    Client["🖥️ Clients / Dashboards"]
+    Client["Clients / Dashboards"]
     GW["FastAPI API Gateway<br/>JWT | RBAC | Rate Limit"]
     Auth["Auth Service<br/>Login | Register | Token"]
     WF["Workflow Service<br/>CRUD | Trigger | Execute"]
@@ -17,7 +17,7 @@ graph TB
     Cache["Redis Cache<br/>Session | Rate Limit | Pub/Sub"]
     Queue["Celery Queue<br/>Distributed Tasks"]
     Monitor["Prometheus<br/>Metrics & Monitoring"]
-    Grafana["📊 Grafana Dashboard<br/>Visualization & Alerts"]
+    Grafana["Grafana Dashboard<br/>Visualization & Alerts"]
     
     Client -->|HTTP/WS| GW
     GW --> Auth
