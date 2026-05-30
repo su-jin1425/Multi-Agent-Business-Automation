@@ -1,0 +1,25 @@
+$kind: http-request
+name: 'Get Current User (Me)'
+description: |-
+  Returns the profile of the currently authenticated user.
+
+  Calls `GET /auth/me` — **JWT Bearer token required**. The token is extracted
+  from the `Authorization: Bearer {{token}}` header and decoded to identify the
+  caller. Use this endpoint to verify that a token is valid and to retrieve the
+  user's `id`, `name`, `email`, `role`, and `created_at` without needing to
+  store the user ID separately.
+
+  **Response schema** (`UserRead`):
+  | Field | Type | Description |
+  |---|---|---|
+  | id | UUID | Unique user identifier |
+  | name | string | Display name |
+  | email | string | Email address |
+  | role | string | `admin` / `manager` / `analyst` / `support_executive` |
+  | created_at | datetime | Account creation timestamp (UTC) |
+
+  **Expected status:** `200 OK`
+  **Error statuses:** `401 Unauthorized` (missing or expired token)
+method: GET
+url: '{{base_url}}/api/v1/auth/me'
+order: 3000

@@ -1,0 +1,25 @@
+$kind: http-request
+name: Overview Metrics
+description: |-
+  Returns a high-level operational summary of the entire platform.
+
+  Calls `GET /analytics/overview` — **JWT Bearer token required** (roles:
+  `admin`, `manager`, `analyst`). Aggregates counts across workflows, agents,
+  tickets, and the Celery task queue to give a real-time snapshot of system
+  health and throughput.
+
+  **Response schema** (`OverviewMetrics`):
+  | Field | Type | Description |
+  |---|---|---|
+  | workflows_total | integer | Total number of workflows in the database |
+  | workflows_completed | integer | Workflows with status `completed` |
+  | workflows_failed | integer | Workflows with status `failed` |
+  | active_agents | integer | Agents with status `active` or `busy` |
+  | open_tickets | integer | Support tickets with status `open` or `in_progress` |
+  | queue_size | integer | Number of tasks currently in the Celery queue (via Redis) |
+
+  **Expected status:** `200 OK`
+  **Error statuses:** `401 Unauthorized`, `403 Forbidden`
+method: GET
+url: '{{base_url}}/api/v1/analytics/overview'
+order: 1000

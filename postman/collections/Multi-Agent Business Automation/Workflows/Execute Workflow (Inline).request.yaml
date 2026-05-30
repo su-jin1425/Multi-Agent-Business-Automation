@@ -1,0 +1,32 @@
+$kind: http-request
+name: 'Execute Workflow (Inline)'
+description: |-
+  Executes a workflow synchronously within the current request/response cycle.
+
+  Calls `POST /workflows/{workflow_id}/execute` — **JWT Bearer token required**
+  (roles: `admin`, `manager`, `analyst`). Unlike **Trigger Workflow**, this
+  endpoint runs the LangGraph orchestrator and agent logic **inline** — without
+  Celery — and blocks until execution completes. The response contains the fully
+  populated `result_payload`.
+
+  **Use this for:**
+  - Local development and testing where Celery workers are not running
+  - Short-lived workflows where synchronous execution is acceptable
+  - Debugging agent output without queue overhead
+
+  **Path variable:**
+  | Variable | Description |
+  |---|---|
+  | workflow_id | UUID of the workflow to execute inline |
+
+  **Response schema** (`WorkflowRead`): workflow object with `status: "completed"` and populated `result_payload`
+
+  **Expected status:** `200 OK`
+  **Error statuses:** `401 Unauthorized`, `403 Forbidden`, `404 Not Found`, `500 Internal Server Error` (agent execution failure)
+method: POST
+url: '{{base_url}}/api/v1/workflows/{{workflow_id}}/execute'
+order: 6000
+pathVariables:
+  - key: workflow_id
+    value: '{{workflow_id}}'
+    description: UUID of the workflow to execute synchronously

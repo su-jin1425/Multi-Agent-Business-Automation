@@ -1,0 +1,7 @@
+$kind: collection
+description: |-
+  Agent registry and direct execution endpoints. Lists all registered AI agents
+  (Finance, Analytics, Support, Operations, Supervisor), retrieves individual
+  agent details, and allows direct task dispatch to a specific agent type
+  without going through the workflow orchestration layer.
+order: 4

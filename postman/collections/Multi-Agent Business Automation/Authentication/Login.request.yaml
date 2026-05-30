@@ -1,0 +1,37 @@
+$kind: http-request
+name: Login
+description: |-
+  Authenticates a user and returns a JWT Bearer token.
+
+  Calls `POST /auth/login` — no authentication required. Accepts an email and
+  password. On success the response contains an `access_token` (JWT), the token
+  type (`bearer`), and the full user object. The token expires after the number
+  of minutes configured in `ACCESS_TOKEN_EXPIRE_MINUTES` (default: 60).
+
+  **Tip:** Copy the `access_token` value from the response and set it as the
+  `{{token}}` collection variable so all subsequent requests are automatically
+  authenticated.
+
+  **Request body** (`LoginRequest`):
+  | Field | Type | Required |
+  |---|---|---|
+  | email | string (email) | ✓ |
+  | password | string | ✓ |
+
+  **Response schema** (`TokenResponse`): `access_token`, `token_type`, `user`
+
+  **Expected status:** `200 OK`
+  **Error statuses:** `401 Unauthorized` (invalid credentials), `422 Unprocessable Entity` (validation failure)
+method: POST
+url: '{{base_url}}/api/v1/auth/login'
+order: 2000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "email": "admin@example.com",
+      "password": "password123"
+    }

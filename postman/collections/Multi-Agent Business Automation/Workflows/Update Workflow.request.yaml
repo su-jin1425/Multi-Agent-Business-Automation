@@ -1,0 +1,45 @@
+$kind: http-request
+name: Update Workflow
+description: |-
+  Updates the name, status, or input payload of an existing workflow.
+
+  Calls `PUT /workflows/{workflow_id}` — **JWT Bearer token required** (roles:
+  `admin`, `manager`). All fields in the request body are optional; only the
+  provided fields are updated (partial update semantics).
+
+  **Path variable:**
+  | Variable | Description |
+  |---|---|
+  | workflow_id | UUID of the workflow to update |
+
+  **Request body** (`WorkflowUpdate`) — all fields optional:
+  | Field | Type | Constraints |
+  |---|---|---|
+  | workflow_name | string | 3–160 characters |
+  | status | string | Any valid `WorkflowStatus` value |
+  | input_payload | object | Replaces the existing input payload |
+
+  **Response schema** (`WorkflowRead`): updated workflow object
+
+  **Expected status:** `200 OK`
+  **Error statuses:** `401 Unauthorized`, `403 Forbidden`, `404 Not Found`, `422 Unprocessable Entity`
+method: PUT
+url: '{{base_url}}/api/v1/workflows/{{workflow_id}}'
+order: 4000
+headers:
+  - key: Content-Type
+    value: application/json
+pathVariables:
+  - key: workflow_id
+    value: '{{workflow_id}}'
+    description: UUID of the workflow to update
+body:
+  type: json
+  content: |-
+    {
+      "workflow_name": "Updated Expense Review",
+      "input_payload": {
+        "expenses": [{"amount": 500}, {"amount": 1500}],
+        "include_forecast": false
+      }
+    }

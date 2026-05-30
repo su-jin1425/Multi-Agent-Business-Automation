@@ -1,0 +1,7 @@
+$kind: collection
+description: |-
+  Full workflow lifecycle management: create, read, update, delete, trigger
+  (Celery-queued), execute inline, pause, resume, and retry. Requires JWT
+  authentication; role requirements vary per endpoint (see individual request
+  descriptions).
+order: 3

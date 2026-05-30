@@ -1,0 +1,26 @@
+$kind: http-request
+name: Pause Workflow
+description: |-
+  Pauses a currently running or pending workflow.
+
+  Calls `POST /workflows/{workflow_id}/pause` — **JWT Bearer token required**
+  (roles: `admin`, `manager`). Transitions the workflow status to `paused` and
+  persists the change. A paused workflow can be resumed later using the
+  **Resume Workflow** endpoint.
+
+  **Path variable:**
+  | Variable | Description |
+  |---|---|
+  | workflow_id | UUID of the workflow to pause |
+
+  **Response schema** (`WorkflowRead`): updated workflow object with `status: "paused"`
+
+  **Expected status:** `200 OK`
+  **Error statuses:** `401 Unauthorized`, `403 Forbidden` (insufficient role), `404 Not Found`
+method: POST
+url: '{{base_url}}/api/v1/workflows/{{workflow_id}}/pause'
+order: 7000
+pathVariables:
+  - key: workflow_id
+    value: '{{workflow_id}}'
+    description: UUID of the workflow to pause

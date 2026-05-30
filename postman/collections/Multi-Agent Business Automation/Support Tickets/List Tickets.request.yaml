@@ -1,0 +1,30 @@
+$kind: http-request
+name: List Tickets
+description: |-
+  Retrieves all support tickets in the system.
+
+  Calls `GET /tickets` — **JWT Bearer token required** (any role). Returns an
+  array of `TicketRead` objects ordered by creation date. Each ticket includes
+  the customer name, issue description, AI-detected sentiment, assigned agent,
+  current status, and any drafted response.
+
+  **Ticket statuses:** `open` | `in_progress` | `escalated` | `resolved` | `closed`
+
+  **Response schema** (array of `TicketRead`):
+  | Field | Type | Description |
+  |---|---|---|
+  | id | UUID | Ticket identifier |
+  | customer_name | string | Name of the customer who raised the ticket |
+  | issue | string | Description of the reported issue |
+  | sentiment | string | AI-detected sentiment (`positive`, `neutral`, `negative`) |
+  | assigned_agent | string | Name of the agent assigned to handle the ticket (null if unassigned) |
+  | status | string | Current ticket status |
+  | response_draft | string | AI-generated response draft (null if not yet generated) |
+  | created_at | datetime | Ticket creation timestamp (UTC) |
+  | updated_at | datetime | Last update timestamp (UTC) |
+
+  **Expected status:** `200 OK`
+  **Error statuses:** `401 Unauthorized`
+method: GET
+url: '{{base_url}}/api/v1/tickets'
+order: 1000

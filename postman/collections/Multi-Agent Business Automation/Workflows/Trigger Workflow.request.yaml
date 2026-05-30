@@ -1,0 +1,37 @@
+$kind: http-request
+name: Trigger Workflow
+description: |-
+  Queues a workflow for distributed execution via Celery.
+
+  Calls `POST /workflows/{workflow_id}/trigger` — **JWT Bearer token required**
+  (roles: `admin`, `manager`, `analyst`). The workflow is dispatched to the
+  Celery task queue (`workflows` queue) and executed asynchronously by a worker
+  process. The endpoint returns immediately with a `celery_task_id` that can be
+  used to track the task.
+
+  This is the **recommended execution path for production** — it decouples the
+  HTTP request from the long-running agent execution and supports retries,
+  distributed workers, and backpressure.
+
+  **Path variable:**
+  | Variable | Description |
+  |---|---|
+  | workflow_id | UUID of the workflow to queue |
+
+  **Response schema** (`WorkflowTriggerResponse`):
+  | Field | Type | Description |
+  |---|---|---|
+  | workflow_id | UUID | The triggered workflow's ID |
+  | status | string | `"pending"` immediately after queuing |
+  | celery_task_id | string | Celery task ID for tracking |
+  | message | string | Human-readable confirmation |
+
+  **Expected status:** `200 OK`
+  **Error statuses:** `401 Unauthorized`, `403 Forbidden`, `404 Not Found`
+method: POST
+url: '{{base_url}}/api/v1/workflows/{{workflow_id}}/trigger'
+order: 5000
+pathVariables:
+  - key: workflow_id
+    value: '{{workflow_id}}'
+    description: UUID of the workflow to queue for execution

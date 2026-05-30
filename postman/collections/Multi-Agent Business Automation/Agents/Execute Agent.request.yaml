@@ -1,0 +1,49 @@
+$kind: http-request
+name: Execute Agent
+description: |-
+  Directly executes a specific agent type with a given task and context.
+
+  Calls `POST /agents/execute` — **JWT Bearer token required** (roles: `admin`,
+  `manager`, `analyst`, `support_executive`). Bypasses the workflow orchestration
+  layer and invokes the agent service directly. The agent runs using the
+  configured AI framework (CrewAI, AutoGen, or local deterministic fallback) and
+  returns the result synchronously.
+
+  **Use this for:**
+  - Ad-hoc agent invocations outside of a workflow
+  - Testing individual agent capabilities
+  - Support executives running quick support-agent tasks
+
+  **Request body** (`AgentExecuteRequest`):
+  | Field | Type | Required | Constraints |
+  |---|---|---|---|
+  | agent_type | string | ✓ | `finance` / `analytics` / `support` / `operations` / `supervisor` |
+  | task | string | ✓ | Minimum 3 characters — natural-language task description |
+  | context | object | — | Arbitrary JSON context passed to the agent |
+
+  **Response schema** (`AgentExecuteResponse`):
+  | Field | Type | Description |
+  |---|---|---|
+  | agent_type | string | The agent type that handled the task |
+  | result | object | Agent output (structure varies by agent type) |
+  | delegated_to | array[string] | Sub-agents the primary agent delegated to |
+
+  **Expected status:** `200 OK`
+  **Error statuses:** `401 Unauthorized`, `403 Forbidden`, `422 Unprocessable Entity`
+method: POST
+url: '{{base_url}}/api/v1/agents/execute'
+order: 3000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "agent_type": "finance",
+      "task": "Analyze monthly expenses and identify cost-saving opportunities",
+      "context": {
+        "expenses": [{"category": "SaaS", "amount": 1200}, {"category": "Cloud", "amount": 3400}],
+        "budget_limit": 5000
+      }
+    }

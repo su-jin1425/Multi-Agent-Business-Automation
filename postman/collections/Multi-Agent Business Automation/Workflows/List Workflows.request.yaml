@@ -1,0 +1,29 @@
+$kind: http-request
+name: List Workflows
+description: |-
+  Retrieves all workflows visible to the authenticated user.
+
+  Calls `GET /workflows` — **JWT Bearer token required** (any role). Returns an
+  array of `WorkflowRead` objects ordered by creation date. Each object includes
+  the workflow's current status, type, input payload, result payload, and the
+  list of associated task steps.
+
+  **Response schema** (array of `WorkflowRead`):
+  | Field | Type | Description |
+  |---|---|---|
+  | id | UUID | Workflow identifier |
+  | workflow_name | string | Human-readable name |
+  | workflow_type | string | `finance` / `analytics` / `support` / `operations` / `hybrid` |
+  | status | string | `pending` / `running` / `completed` / `failed` / `retrying` / `paused` |
+  | created_by | UUID | ID of the user who created the workflow |
+  | input_payload | object | Original input data |
+  | result_payload | object | Execution output (populated after completion) |
+  | created_at | datetime | Creation timestamp (UTC) |
+  | updated_at | datetime | Last update timestamp (UTC) |
+  | tasks | array | List of `WorkflowTaskRead` step objects |
+
+  **Expected status:** `200 OK`
+  **Error statuses:** `401 Unauthorized`
+method: GET
+url: '{{base_url}}/api/v1/workflows'
+order: 1000

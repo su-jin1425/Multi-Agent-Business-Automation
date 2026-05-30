@@ -1,0 +1,6 @@
+$kind: collection
+description: |-
+  User registration, login, and profile endpoints. JWT Bearer tokens obtained
+  from the Login request must be set as the `{{token}}` collection variable to
+  authenticate all other requests in this collection.
+order: 2

@@ -1,0 +1,28 @@
+$kind: http-request
+name: List Agents
+description: |-
+  Returns all registered AI agents and their current status.
+
+  Calls `GET /agents` — **JWT Bearer token required** (any role). The agent
+  registry is seeded at startup with the four core agent types. Each record
+  reflects the agent's live status, capabilities, and last-active timestamp.
+
+  **Agent types:** `finance` | `analytics` | `support` | `operations` | `supervisor`
+
+  **Agent statuses:** `active` | `idle` | `busy` | `offline` | `degraded`
+
+  **Response schema** (array of `AgentRead`):
+  | Field | Type | Description |
+  |---|---|---|
+  | id | UUID | Agent identifier |
+  | agent_name | string | Human-readable agent name |
+  | agent_type | string | One of the agent type values above |
+  | status | string | Current operational status |
+  | capabilities | array[string] | List of task capabilities the agent supports |
+  | last_active | datetime | UTC timestamp of last execution (null if never run) |
+
+  **Expected status:** `200 OK`
+  **Error statuses:** `401 Unauthorized`
+method: GET
+url: '{{base_url}}/api/v1/agents'
+order: 1000

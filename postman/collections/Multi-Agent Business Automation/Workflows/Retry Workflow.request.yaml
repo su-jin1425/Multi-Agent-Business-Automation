@@ -1,0 +1,27 @@
+$kind: http-request
+name: Retry Workflow
+description: |-
+  Retries a failed workflow from the beginning.
+
+  Calls `POST /workflows/{workflow_id}/retry` — **JWT Bearer token required**
+  (roles: `admin`, `manager`). Transitions the workflow status to `retrying`,
+  resets execution state, and re-queues the workflow for processing. Use this
+  endpoint when a workflow has failed due to a transient error (e.g., a
+  downstream service timeout or an LLM API rate limit).
+
+  **Path variable:**
+  | Variable | Description |
+  |---|---|
+  | workflow_id | UUID of the failed workflow to retry |
+
+  **Response schema** (`WorkflowRead`): updated workflow object with `status: "retrying"`
+
+  **Expected status:** `200 OK`
+  **Error statuses:** `401 Unauthorized`, `403 Forbidden`, `404 Not Found`
+method: POST
+url: '{{base_url}}/api/v1/workflows/{{workflow_id}}/retry'
+order: 9000
+pathVariables:
+  - key: workflow_id
+    value: '{{workflow_id}}'
+    description: UUID of the failed workflow to retry

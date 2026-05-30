@@ -1,0 +1,7 @@
+$kind: collection
+description: |-
+  Customer support ticket management. Allows creating tickets (no auth required),
+  listing all tickets, and updating ticket status, agent assignment, and
+  AI-generated response drafts. Restricted update operations require
+  `admin`, `manager`, or `support_executive` role.
+order: 6

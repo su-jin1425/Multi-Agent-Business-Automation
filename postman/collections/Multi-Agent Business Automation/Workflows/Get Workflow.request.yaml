@@ -1,0 +1,29 @@
+$kind: http-request
+name: Get Workflow
+description: |-
+  Retrieves a single workflow by its UUID.
+
+  Calls `GET /workflows/{workflow_id}` — **JWT Bearer token required** (any
+  role). Returns the full `WorkflowRead` object including the current status,
+  result payload (populated after completion), and all associated task steps
+  with their individual statuses and execution logs.
+
+  Use this endpoint to poll workflow progress after triggering execution, or to
+  inspect the `result_payload` once the status transitions to `completed`.
+
+  **Path variable:**
+  | Variable | Description |
+  |---|---|
+  | workflow_id | UUID of the target workflow (set `{{workflow_id}}` collection variable) |
+
+  **Response schema** (`WorkflowRead`): full workflow object
+
+  **Expected status:** `200 OK`
+  **Error statuses:** `401 Unauthorized`, `404 Not Found` (workflow does not exist)
+method: GET
+url: '{{base_url}}/api/v1/workflows/{{workflow_id}}'
+order: 3000
+pathVariables:
+  - key: workflow_id
+    value: '{{workflow_id}}'
+    description: UUID of the workflow to retrieve

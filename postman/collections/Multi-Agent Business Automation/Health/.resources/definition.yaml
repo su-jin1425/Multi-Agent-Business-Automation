@@ -1,0 +1,3 @@
+$kind: collection
+description: Liveness and readiness probes for the FastAPI application and its dependencies (PostgreSQL, Redis). No authentication required.
+order: 1

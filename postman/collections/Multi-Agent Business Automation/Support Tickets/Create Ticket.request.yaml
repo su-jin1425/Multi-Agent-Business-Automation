@@ -1,0 +1,35 @@
+$kind: http-request
+name: Create Ticket
+description: |-
+  Creates a new customer support ticket.
+
+  Calls `POST /tickets` — **no authentication required** (open endpoint to allow
+  customers to submit tickets without an account). The support agent service
+  automatically analyzes the issue text to detect sentiment and may generate an
+  initial response draft. The ticket is created with status `open`.
+
+  **Request body** (`TicketCreate`):
+  | Field | Type | Required | Constraints |
+  |---|---|---|---|
+  | customer_name | string | ✓ | 2–120 characters |
+  | issue | string | ✓ | Minimum 5 characters — description of the problem |
+
+  **Response schema** (`TicketRead`): full ticket object with `id`, `sentiment`,
+  and `status: "open"`. The `assigned_agent` and `response_draft` fields may be
+  populated immediately if the support agent processes the ticket synchronously.
+
+  **Expected status:** `201 Created`
+  **Error statuses:** `422 Unprocessable Entity` (validation failure)
+method: POST
+url: '{{base_url}}/api/v1/tickets'
+order: 2000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "customer_name": "Jane Smith",
+      "issue": "I cannot log in to my account after the recent password reset. The reset email link appears to be expired."
+    }

@@ -1,0 +1,7 @@
+$kind: collection
+description: |-
+  Platform analytics and observability endpoints. Provides overview metrics
+  (workflow counts, active agents, open tickets, queue depth), workflow
+  execution statistics by status, and per-agent performance profiles
+  (completed tasks, failure rate, average latency).
+order: 5

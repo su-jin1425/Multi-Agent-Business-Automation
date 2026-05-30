@@ -1,0 +1,33 @@
+$kind: collection
+name: Multi-Agent Business Automation
+description: |-
+  Production-oriented backend API for the Multi-Agent Business Automation System.
+  Built with FastAPI, LangGraph, CrewAI, AutoGen, PostgreSQL, Redis, and Celery.
+
+  All endpoints are versioned under `/api/v1`. JWT Bearer authentication is required
+  for all protected routes. Role-based access control (RBAC) enforces Admin, Manager,
+  Analyst, and Support Executive permission levels.
+
+  Use the `{{base_url}}` variable (e.g. `http://localhost:8000`) and set `{{token}}`
+  after a successful login to authenticate subsequent requests.
+variables:
+  - key: base_url
+    value: 'http://localhost:8000'
+    description: Base URL of the running FastAPI application
+  - key: token
+    value: ''
+    description: JWT Bearer token obtained from POST /auth/login
+  - key: workflow_id
+    value: ''
+    description: UUID of a workflow, set after creating or listing workflows
+  - key: agent_id
+    value: ''
+    description: UUID of an agent, set after listing agents
+  - key: ticket_id
+    value: ''
+    description: UUID of a support ticket, set after creating or listing tickets
+auth:
+  type: bearer
+  credentials:
+    - key: token
+      value: '{{token}}'

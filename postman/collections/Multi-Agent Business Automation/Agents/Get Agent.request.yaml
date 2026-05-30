@@ -1,0 +1,28 @@
+$kind: http-request
+name: Get Agent
+description: |-
+  Retrieves a single agent record by its UUID.
+
+  Calls `GET /agents/{agent_id}` — **JWT Bearer token required** (any role).
+  Returns the full `AgentRead` object for the specified agent, including its
+  type, current status, capabilities list, and last-active timestamp.
+
+  Use this endpoint to check whether a specific agent is available (`active` or
+  `idle`) before dispatching a task via **Execute Agent**.
+
+  **Path variable:**
+  | Variable | Description |
+  |---|---|
+  | agent_id | UUID of the agent to retrieve (set `{{agent_id}}` collection variable) |
+
+  **Response schema** (`AgentRead`): full agent object
+
+  **Expected status:** `200 OK`
+  **Error statuses:** `401 Unauthorized`, `404 Not Found` (agent does not exist)
+method: GET
+url: '{{base_url}}/api/v1/agents/{{agent_id}}'
+order: 2000
+pathVariables:
+  - key: agent_id
+    value: '{{agent_id}}'
+    description: UUID of the agent to retrieve

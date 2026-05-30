@@ -1,0 +1,25 @@
+$kind: http-request
+name: Agent Performance
+description: |-
+  Returns per-agent execution performance metrics.
+
+  Calls `GET /analytics/agent-performance` — **JWT Bearer token required**
+  (roles: `admin`, `manager`, `analyst`). Aggregates task-level execution data
+  from the database to produce a performance profile for each registered agent.
+  Use this to identify slow or unreliable agents, compare framework performance
+  (CrewAI vs AutoGen vs local fallback), and inform capacity planning.
+
+  **Response schema** (array of `AgentPerformance`):
+  | Field | Type | Description |
+  |---|---|---|
+  | agent_name | string | Human-readable agent name |
+  | agent_type | string | Agent type (`finance`, `analytics`, `support`, `operations`) |
+  | completed_tasks | integer | Total tasks completed successfully |
+  | failed_tasks | integer | Total tasks that ended in failure |
+  | average_latency_ms | float | Mean execution time in milliseconds across all completed tasks |
+
+  **Expected status:** `200 OK`
+  **Error statuses:** `401 Unauthorized`, `403 Forbidden`
+method: GET
+url: '{{base_url}}/api/v1/analytics/agent-performance'
+order: 3000

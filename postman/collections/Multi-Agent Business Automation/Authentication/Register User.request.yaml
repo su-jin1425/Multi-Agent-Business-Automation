@@ -1,0 +1,39 @@
+$kind: http-request
+name: Register User
+description: |-
+  Creates a new user account in the system.
+
+  Calls `POST /auth/register` — no authentication required. Accepts a JSON body
+  with the user's full name, email address, password, and optional role. On
+  success the endpoint returns the persisted user record (without the password
+  hash) with HTTP 201.
+
+  **Roles available:** `admin` | `manager` | `analyst` (default) | `support_executive`
+
+  **Request body** (`UserCreate`):
+  | Field | Type | Required | Constraints |
+  |---|---|---|---|
+  | name | string | ✓ | 2–120 characters |
+  | email | string (email) | ✓ | Must be unique |
+  | password | string | ✓ | 8–128 characters |
+  | role | string | — | Defaults to `analyst` |
+
+  **Response schema** (`UserRead`): `id`, `name`, `email`, `role`, `created_at`
+
+  **Expected status:** `201 Created`
+  **Error statuses:** `409 Conflict` (email already registered), `422 Unprocessable Entity` (validation failure)
+method: POST
+url: '{{base_url}}/api/v1/auth/register'
+order: 1000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "name": "Admin User",
+      "email": "admin@example.com",
+      "password": "password123",
+      "role": "admin"
+    }

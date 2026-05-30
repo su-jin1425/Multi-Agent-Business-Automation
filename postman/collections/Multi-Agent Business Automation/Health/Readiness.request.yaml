@@ -1,0 +1,21 @@
+$kind: http-request
+name: Readiness
+description: |-
+  Checks whether all downstream dependencies are ready to serve traffic.
+
+  Calls `GET /ready` — no authentication required. The handler executes a
+  `SELECT 1` probe against PostgreSQL and a `PING` against Redis. If either
+  dependency is unavailable the request will fail with a 500-level error,
+  making this endpoint suitable for Kubernetes `readinessProbe` configuration
+  and load-balancer health checks.
+
+  **Response (success):**
+  ```json
+  { "status": "ready" }
+  ```
+
+  **Expected status:** `200 OK` (both PostgreSQL and Redis are reachable)
+  **Failure status:** `500 Internal Server Error` (one or more dependencies are down)
+method: GET
+url: '{{base_url}}/ready'
+order: 2000

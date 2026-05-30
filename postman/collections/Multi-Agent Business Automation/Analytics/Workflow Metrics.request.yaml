@@ -1,0 +1,23 @@
+$kind: http-request
+name: Workflow Metrics
+description: |-
+  Returns detailed workflow execution statistics broken down by status.
+
+  Calls `GET /analytics/workflow-metrics` — **JWT Bearer token required**
+  (roles: `admin`, `manager`, `analyst`). Provides a status-bucketed count of
+  all workflows plus derived completion and failure rates. Use this data to
+  monitor pipeline health, identify bottlenecks, and track SLA compliance over
+  time.
+
+  **Response schema** (`WorkflowMetrics`):
+  | Field | Type | Description |
+  |---|---|---|
+  | by_status | object | Map of `WorkflowStatus → count` (e.g. `{"completed": 42, "failed": 3, ...}`) |
+  | completion_rate | float | Ratio of completed workflows to total (0.0–1.0) |
+  | failure_rate | float | Ratio of failed workflows to total (0.0–1.0) |
+
+  **Expected status:** `200 OK`
+  **Error statuses:** `401 Unauthorized`, `403 Forbidden`
+method: GET
+url: '{{base_url}}/api/v1/analytics/workflow-metrics'
+order: 2000

@@ -1,0 +1,22 @@
+$kind: http-request
+name: Health Check
+description: |-
+  Returns the current liveness status of the API server.
+
+  Calls `GET /health` — no authentication required. The response includes the
+  application name, environment (development / production), semantic version, and
+  a UTC timestamp. Use this endpoint to verify that the FastAPI process is running
+  and reachable before sending authenticated requests.
+
+  **Response schema** (`HealthResponse`):
+  | Field | Type | Description |
+  |---|---|---|
+  | status | string | Always `"ok"` when the server is up |
+  | environment | string | Active environment name from `ENVIRONMENT` env var |
+  | version | string | Application version (currently `"1.0.0"`) |
+  | timestamp | datetime | UTC time of the response |
+
+  **Expected status:** `200 OK`
+method: GET
+url: '{{base_url}}/health'
+order: 1000

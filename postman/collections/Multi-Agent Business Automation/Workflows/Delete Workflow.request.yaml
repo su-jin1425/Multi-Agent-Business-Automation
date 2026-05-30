@@ -1,0 +1,29 @@
+$kind: http-request
+name: Delete Workflow
+description: |-
+  Permanently deletes a workflow and all its associated task records.
+
+  Calls `DELETE /workflows/{workflow_id}` — **JWT Bearer token required**
+  (roles: `admin`, `manager`). This operation is **irreversible**. All task
+  steps, execution logs, and result payloads linked to the workflow are removed
+  from the database.
+
+  **Path variable:**
+  | Variable | Description |
+  |---|---|
+  | workflow_id | UUID of the workflow to delete |
+
+  **Response schema** (`MessageResponse`):
+  ```json
+  { "message": "Workflow deleted" }
+  ```
+
+  **Expected status:** `200 OK`
+  **Error statuses:** `401 Unauthorized`, `403 Forbidden` (insufficient role), `404 Not Found`
+method: DELETE
+url: '{{base_url}}/api/v1/workflows/{{workflow_id}}'
+order: 10000
+pathVariables:
+  - key: workflow_id
+    value: '{{workflow_id}}'
+    description: UUID of the workflow to permanently delete

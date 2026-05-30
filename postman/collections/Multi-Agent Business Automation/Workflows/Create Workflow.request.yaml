@@ -1,0 +1,46 @@
+$kind: http-request
+name: Create Workflow
+description: |-
+  Creates and persists a new workflow definition.
+
+  Calls `POST /workflows` — **JWT Bearer token required** (roles: `admin`,
+  `manager`, `analyst`). The workflow is saved with status `pending` and is not
+  executed immediately. Use the **Trigger Workflow** or **Execute Workflow
+  (Inline)** requests to start execution.
+
+  **Request body** (`WorkflowCreate`):
+  | Field | Type | Required | Constraints |
+  |---|---|---|---|
+  | workflow_name | string | ✓ | 3–160 characters |
+  | workflow_type | string | ✓ | `finance` / `analytics` / `support` / `operations` / `hybrid` |
+  | input_payload | object | — | Arbitrary JSON data passed to the agent at execution time |
+
+  **Example `input_payload` for a finance workflow:**
+  ```json
+  {
+    "expenses": [{"amount": 200}, {"amount": 1200}, {"amount": 250}],
+    "include_forecast": true
+  }
+  ```
+
+  **Response schema** (`WorkflowRead`): full workflow object with `id` and `status: "pending"`
+
+  **Expected status:** `201 Created`
+  **Error statuses:** `401 Unauthorized`, `403 Forbidden` (insufficient role), `422 Unprocessable Entity`
+method: POST
+url: '{{base_url}}/api/v1/workflows'
+order: 2000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "workflow_name": "Monthly Expense Review",
+      "workflow_type": "finance",
+      "input_payload": {
+        "expenses": [{"amount": 200}, {"amount": 1200}, {"amount": 250}],
+        "include_forecast": true
+      }
+    }
