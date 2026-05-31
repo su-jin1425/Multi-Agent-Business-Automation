@@ -26,3 +26,20 @@ pathVariables:
   - key: agent_id
     value: '{{agent_id}}'
     description: UUID of the agent to retrieve
+
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('Status code is 200', function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test('Response has id field', function () {
+          pm.expect(pm.response.json()).to.have.property('id');
+      });
+      pm.test('Response has agent_type field', function () {
+          pm.expect(pm.response.json()).to.have.property('agent_type');
+      });
+      pm.test('Response has status field', function () {
+          pm.expect(pm.response.json()).to.have.property('status');
+      });

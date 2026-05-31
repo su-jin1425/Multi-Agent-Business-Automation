@@ -27,3 +27,14 @@ description: |-
 method: GET
 url: '{{base_url}}/api/v1/workflows'
 order: 1000
+
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('Status code is 200', function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test('Response is an array', function () {
+          pm.expect(pm.response.json()).to.be.an('array');
+      });

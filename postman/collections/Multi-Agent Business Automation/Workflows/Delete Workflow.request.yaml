@@ -27,3 +27,14 @@ pathVariables:
   - key: workflow_id
     value: '{{workflow_id}}'
     description: UUID of the workflow to permanently delete
+
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('Status code is 200', function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test('Response has message field', function () {
+          pm.expect(pm.response.json()).to.have.property('message');
+      });

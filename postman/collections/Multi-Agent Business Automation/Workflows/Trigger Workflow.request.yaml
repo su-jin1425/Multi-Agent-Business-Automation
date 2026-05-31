@@ -35,3 +35,20 @@ pathVariables:
   - key: workflow_id
     value: '{{workflow_id}}'
     description: UUID of the workflow to queue for execution
+
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('Status code is 200', function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test('Response has workflow_id', function () {
+          pm.expect(pm.response.json()).to.have.property('workflow_id');
+      });
+      pm.test('Response has celery_task_id', function () {
+          pm.expect(pm.response.json()).to.have.property('celery_task_id');
+      });
+      pm.test('Response has message', function () {
+          pm.expect(pm.response.json()).to.have.property('message');
+      });

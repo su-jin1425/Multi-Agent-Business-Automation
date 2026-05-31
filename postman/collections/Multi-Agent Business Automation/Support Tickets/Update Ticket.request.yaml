@@ -45,3 +45,17 @@ body:
       "assigned_agent": "Support Agent",
       "response_draft": "Thank you for reaching out. We have identified the issue with your password reset link and are working on a fix. Please try requesting a new reset link."
     }
+
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('Status code is 200', function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test('Response has id field', function () {
+          pm.expect(pm.response.json()).to.have.property('id');
+      });
+      pm.test('Response has updated status', function () {
+          pm.expect(pm.response.json()).to.have.property('status');
+      });

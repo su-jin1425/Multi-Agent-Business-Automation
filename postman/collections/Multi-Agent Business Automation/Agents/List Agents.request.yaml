@@ -26,3 +26,22 @@ description: |-
 method: GET
 url: '{{base_url}}/api/v1/agents'
 order: 1000
+
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('Status code is 200', function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test('Response is an array', function () {
+          pm.expect(pm.response.json()).to.be.an('array');
+      });
+      pm.test('Each agent has id and agent_type', function () {
+          const agents = pm.response.json();
+          if (agents.length > 0) {
+              pm.expect(agents[0]).to.have.property('id');
+              pm.expect(agents[0]).to.have.property('agent_type');
+              pm.collectionVariables.set('agent_id', agents[0].id);
+          }
+      });

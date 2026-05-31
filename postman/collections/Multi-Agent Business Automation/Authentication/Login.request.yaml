@@ -35,3 +35,29 @@ body:
       "email": "admin@example.com",
       "password": "password123"
     }
+
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('Status code is 200', function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test('Response has access_token', function () {
+          const json = pm.response.json();
+          pm.expect(json).to.have.property('access_token');
+          pm.expect(json.access_token).to.be.a('string').and.not.empty;
+      });
+      pm.test('Response has token_type bearer', function () {
+          const json = pm.response.json();
+          pm.expect(json).to.have.property('token_type');
+          pm.expect(json.token_type.toLowerCase()).to.eql('bearer');
+      });
+      pm.test('Response has user object', function () {
+          const json = pm.response.json();
+          pm.expect(json).to.have.property('user');
+      });
+      if (pm.response.code === 200) {
+          const json = pm.response.json();
+          pm.collectionVariables.set('token', json.access_token);
+      }

@@ -33,3 +33,22 @@ body:
       "customer_name": "Jane Smith",
       "issue": "I cannot log in to my account after the recent password reset. The reset email link appears to be expired."
     }
+
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('Status code is 201', function () {
+          pm.response.to.have.status(201);
+      });
+      pm.test('Response has id field', function () {
+          pm.expect(pm.response.json()).to.have.property('id');
+      });
+      pm.test('Response has status open', function () {
+          const json = pm.response.json();
+          pm.expect(json).to.have.property('status');
+          pm.expect(json.status).to.eql('open');
+      });
+      if (pm.response.code === 201) {
+          pm.collectionVariables.set('ticket_id', pm.response.json().id);
+      }

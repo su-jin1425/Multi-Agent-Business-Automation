@@ -23,3 +23,20 @@ description: |-
 method: GET
 url: '{{base_url}}/api/v1/auth/me'
 order: 3000
+
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('Status code is 200', function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test('Response has id field', function () {
+          pm.expect(pm.response.json()).to.have.property('id');
+      });
+      pm.test('Response has email field', function () {
+          pm.expect(pm.response.json()).to.have.property('email');
+      });
+      pm.test('Response has role field', function () {
+          pm.expect(pm.response.json()).to.have.property('role');
+      });

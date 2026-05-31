@@ -27,3 +27,20 @@ pathVariables:
   - key: workflow_id
     value: '{{workflow_id}}'
     description: UUID of the workflow to retrieve
+
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('Status code is 200', function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test('Response has id field', function () {
+          pm.expect(pm.response.json()).to.have.property('id');
+      });
+      pm.test('Response has workflow_type', function () {
+          pm.expect(pm.response.json()).to.have.property('workflow_type');
+      });
+      pm.test('Response has status field', function () {
+          pm.expect(pm.response.json()).to.have.property('status');
+      });

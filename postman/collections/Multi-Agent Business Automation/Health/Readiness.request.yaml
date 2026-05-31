@@ -19,3 +19,19 @@ description: |-
 method: GET
 url: '{{base_url}}/ready'
 order: 2000
+
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('Status code is 200', function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test('Response has status ready', function () {
+          const json = pm.response.json();
+          pm.expect(json).to.have.property('status');
+          pm.expect(json.status).to.eql('ready');
+      });
+      pm.test('Response time under 3000ms', function () {
+          pm.expect(pm.response.responseTime).to.be.below(3000);
+      });

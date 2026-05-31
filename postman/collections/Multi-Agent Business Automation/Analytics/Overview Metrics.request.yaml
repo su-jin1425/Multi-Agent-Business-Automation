@@ -23,3 +23,20 @@ description: |-
 method: GET
 url: '{{base_url}}/api/v1/analytics/overview'
 order: 1000
+
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('Status code is 200', function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test('Response has workflows_total', function () {
+          pm.expect(pm.response.json()).to.have.property('workflows_total');
+      });
+      pm.test('Response has active_agents', function () {
+          pm.expect(pm.response.json()).to.have.property('active_agents');
+      });
+      pm.test('Response has open_tickets', function () {
+          pm.expect(pm.response.json()).to.have.property('open_tickets');
+      });

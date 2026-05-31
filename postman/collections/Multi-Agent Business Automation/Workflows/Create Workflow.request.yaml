@@ -44,3 +44,25 @@ body:
         "include_forecast": true
       }
     }
+
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('Status code is 201', function () {
+          pm.response.to.have.status(201);
+      });
+      pm.test('Response has id field', function () {
+          pm.expect(pm.response.json()).to.have.property('id');
+      });
+      pm.test('Response has status pending', function () {
+          const json = pm.response.json();
+          pm.expect(json).to.have.property('status');
+          pm.expect(json.status).to.eql('pending');
+      });
+      pm.test('Response has workflow_name', function () {
+          pm.expect(pm.response.json()).to.have.property('workflow_name');
+      });
+      if (pm.response.code === 201) {
+          pm.collectionVariables.set('workflow_id', pm.response.json().id);
+      }

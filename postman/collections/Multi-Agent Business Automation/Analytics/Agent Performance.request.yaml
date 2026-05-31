@@ -23,3 +23,21 @@ description: |-
 method: GET
 url: '{{base_url}}/api/v1/analytics/agent-performance'
 order: 3000
+
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('Status code is 200', function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test('Response is an array', function () {
+          pm.expect(pm.response.json()).to.be.an('array');
+      });
+      pm.test('Each entry has agent_name and agent_type', function () {
+          const data = pm.response.json();
+          if (data.length > 0) {
+              pm.expect(data[0]).to.have.property('agent_name');
+              pm.expect(data[0]).to.have.property('agent_type');
+          }
+      });

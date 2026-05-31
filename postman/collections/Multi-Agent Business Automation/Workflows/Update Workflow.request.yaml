@@ -43,3 +43,17 @@ body:
         "include_forecast": false
       }
     }
+
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('Status code is 200', function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test('Response has id field', function () {
+          pm.expect(pm.response.json()).to.have.property('id');
+      });
+      pm.test('Response has workflow_name', function () {
+          pm.expect(pm.response.json()).to.have.property('workflow_name');
+      });

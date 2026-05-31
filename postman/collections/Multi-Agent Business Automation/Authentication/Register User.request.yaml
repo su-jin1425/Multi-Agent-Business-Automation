@@ -37,3 +37,23 @@ body:
       "password": "password123",
       "role": "admin"
     }
+
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('Status code is 201', function () {
+          pm.response.to.have.status(201);
+      });
+      pm.test('Response has user id', function () {
+          const json = pm.response.json();
+          pm.expect(json).to.have.property('id');
+      });
+      pm.test('Response has email field', function () {
+          const json = pm.response.json();
+          pm.expect(json).to.have.property('email');
+      });
+      pm.test('Response has role field', function () {
+          const json = pm.response.json();
+          pm.expect(json).to.have.property('role');
+      });

@@ -24,3 +24,16 @@ pathVariables:
   - key: workflow_id
     value: '{{workflow_id}}'
     description: UUID of the workflow to pause
+
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test('Status code is 200', function () {
+          pm.response.to.have.status(200);
+      });
+      pm.test('Response has status paused', function () {
+          const json = pm.response.json();
+          pm.expect(json).to.have.property('status');
+          pm.expect(json.status).to.eql('paused');
+      });
