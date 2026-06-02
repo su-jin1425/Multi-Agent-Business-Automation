@@ -1,6 +1,30 @@
 # Multi-Agent Business Automation System
 
-Production-oriented backend platform for finance, analytics, operations, and customer support automation using autonomous agents coordinated through FastAPI, LangGraph, CrewAI, AutoGen, PostgreSQL, Redis, Celery, Prometheus, and Grafana.
+Production-oriented backend platform for finance, analytics, operations, and customer support automation using autonomous agents coordinated through a unified API gateway.
+
+---
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Tech Stack](#tech-stack)
+- [Prerequisites](#prerequisites)
+- [Quick Start](#quick-start)
+- [Environment Configuration](#environment-configuration)
+- [Database Migration](#database-migration)
+- [API Reference](#api-reference)
+  - [Health and Readiness](#health-and-readiness)
+  - [Authentication](#authentication)
+  - [Workflows](#workflows)
+  - [Agents](#agents)
+  - [Analytics](#analytics)
+  - [Support Tickets](#support-tickets)
+  - [Prometheus Metrics](#prometheus-metrics)
+- [Database Verification](#database-verification)
+- [Workflow Lifecycle](#workflow-lifecycle)
+- [Agent Assignment Map](#agent-assignment-map)
+
+---
 
 ## Architecture
 
@@ -11,453 +35,1033 @@ graph TB
     Auth["Auth Service<br/>Login | Register | Token"]
     WF["Workflow Service<br/>CRUD | Trigger | Execute"]
     WFO["Workflow Orchestrator<br/>LangGraph State Machine"]
-    AgentSvc["Agent Service<br/>Finance | Analytics<br/>Support | Operations"]
+    AgentSvc["Agent Service<br/>Finance | Analytics | Support | Operations"]
     Agents["Agent Framework<br/>CrewAI | AutoGen | LangGraph"]
-    DB["PostgreSQL<br/>Users | Workflows | Tickets"]
-    Cache["Redis Cache<br/>Session | Rate Limit | Pub/Sub"]
+    DB[("PostgreSQL<br/>Users | Workflows | Tickets")]
+    Cache[("Redis Cache<br/>Session | Rate Limit | Pub/Sub")]
     Queue["Celery Queue<br/>Distributed Tasks"]
     Monitor["Prometheus<br/>Metrics & Monitoring"]
     Grafana["Grafana Dashboard<br/>Visualization & Alerts"]
-    
-    Client -->|HTTP/WS| GW
+
+    Client --> GW
     GW --> Auth
     GW --> WF
+    GW --> AgentSvc
     WF --> WFO
-    WFO --> AgentSvc
+    WFO --> Agents
     AgentSvc --> Agents
-    Agents --> Cache
-    WFO --> Queue
-    Queue --> Agents
-    Auth --> DB
     WF --> DB
-    WFO --> DB
-    Agents --> Monitor
+    WF --> Queue
+    Queue --> Agents
+    Agents --> DB
+    Auth --> DB
+    GW --> Cache
+    Agents --> Cache
     GW --> Monitor
     Monitor --> Grafana
-    Cache -.->|Pub/Sub| Agents
-    DB -.->|Async| Cache
 ```
 
-The code is organized around thin API routers, service-layer business logic, repository-based persistence, and framework adapters for CrewAI, LangGraph, AutoGen, and LangChain-friendly future tooling.
+---
 
-## Features
+## Tech Stack
 
-- JWT authentication with role-based access control: Admin, Manager, Analyst, Support Executive
-- Workflow CRUD plus trigger, inline execute, pause, resume, retry, and execution history
-- Finance, analytics, support, and operations agents with autonomous delegation
-- LangGraph execution graph with conditional routing and parallel async agent execution
-- CrewAI and AutoGen adapters with graceful local fallbacks
-- PostgreSQL persistence through SQLAlchemy async sessions and Alembic migrations
-- Redis for rate limiting, Pub/Sub, workflow state cache, and Celery broker/backend
-- Celery workers for distributed background execution
-- Prometheus `/metrics`, structured JSON logs, health and readiness endpoints
-- Docker Compose for local and production deployment
-- Grafana dashboard provisioning
-- Kubernetes starter manifests and GitHub Actions CI
+| Layer         | Technology                             |
+|---------------|----------------------------------------|
+| API Gateway   | FastAPI, JWT, RBAC, Rate Limiting      |
+| Orchestration | LangGraph State Machine                |
+| Agents        | CrewAI, AutoGen, LangGraph             |
+| Database      | PostgreSQL                             |
+| Cache         | Redis                                  |
+| Task Queue    | Celery                                 |
+| Monitoring    | Prometheus, Grafana                    |
+| Containers    | Docker, Docker Compose                 |
 
-## API Surface
+---
 
-All versioned endpoints are mounted under `/api/v1`.
+## Prerequisites
 
-- `POST /auth/register`
-- `POST /auth/login`
-- `GET /auth/me`
-- `POST /workflows`
-- `GET /workflows`
-- `GET /workflows/{id}`
-- `PUT /workflows/{id}`
-- `DELETE /workflows/{id}`
-- `POST /workflows/{id}/trigger`
-- `POST /workflows/{id}/execute`
-- `POST /workflows/{id}/pause`
-- `POST /workflows/{id}/resume`
-- `POST /workflows/{id}/retry`
-- `GET /agents`
-- `GET /agents/{id}`
-- `POST /agents/execute`
-- `GET /analytics/overview`
-- `GET /analytics/workflow-metrics`
-- `GET /analytics/agent-performance`
-- `POST /tickets`
-- `GET /tickets`
-- `PUT /tickets/{id}`
-- `WS /notifications/workflows/{workflow_id}/ws`
-- `GET /health`
-- `GET /ready`
+- Docker Desktop (latest stable)
+- Docker Compose v2+
+- PowerShell 5.1+ or PowerShell Core 7+ (Windows) or any shell with curl (Linux/macOS)
+- PostgreSQL client (optional, for direct DB inspection)
 
-Swagger UI is available at `/docs`.
+---
 
-## Local Deployment
+## Quick Start
 
-```bash
+### 1. Clone and Configure
+
+```powershell
 cp .env.example .env
+```
+
+Edit `.env` with your credentials before proceeding.
+
+### 2. Build and Start All Services
+
+```powershell
 docker-compose up --build
 ```
 
-Run migrations:
+This starts the API server, PostgreSQL, Redis, Celery workers, Prometheus, and Grafana.
 
-```bash
+### 3. Apply Database Migrations
+
+```powershell
 docker-compose exec backend alembic upgrade head
 ```
 
-Access services:
+### 4. Verify the Stack is Healthy
 
-- FastAPI: http://localhost:8000
-- Swagger: http://localhost:8000/docs
-- Prometheus: http://localhost:9090
-- Grafana: http://localhost:3000
-
-Grafana defaults to `admin` / `admin` locally.
-
-## Example Requests
-
-Register a user:
-
-```bash
-curl -X POST http://localhost:8000/api/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Admin","email":"admin@example.com","password":"password123","role":"admin"}'
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/health"
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/ready"
 ```
 
-Login:
+---
 
-```bash
-curl -X POST http://localhost:8000/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@example.com","password":"password123"}'
-```
+## Environment Configuration
 
-Create a finance workflow:
-
-```bash
-curl -X POST http://localhost:8000/api/v1/workflows \
-  -H "Authorization: Bearer <token>" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "workflow_name": "Monthly Expense Review",
-    "workflow_type": "finance",
-    "input_payload": {
-      "expenses": [{"amount": 200}, {"amount": 1200}, {"amount": 250}],
-      "include_forecast": true
-    }
-  }'
-```
-
-Queue workflow execution:
-
-```bash
-curl -X POST http://localhost:8000/api/v1/workflows/<workflow_id>/trigger \
-  -H "Authorization: Bearer <token>"
-```
-
-Execute immediately without Celery:
-
-```bash
-curl -X POST http://localhost:8000/api/v1/workflows/<workflow_id>/execute \
-  -H "Authorization: Bearer <token>"
-```
-
-## Production Deployment
-
-Configure `.env` with production values:
+Copy `.env.example` to `.env` and update the following values:
 
 ```env
-ENVIRONMENT=production
-DATABASE_URL=postgresql://postgres:password@db:5432/automation_db
-REDIS_URL=redis://redis:6379/0
-SECRET_KEY=replace_with_a_long_random_production_secret
-OPENAI_API_KEY=your_openai_key
+# Database
+DATABASE_URL=postgresql://postgres:password@localhost:5432/automation_db
+
+# Redis
+REDIS_URL=redis://localhost:6379
+
+# JWT
+SECRET_KEY=your-secret-key
+ACCESS_TOKEN_EXPIRE_MINUTES=60
+
+# Celery
+CELERY_BROKER_URL=redis://localhost:6379/0
+CELERY_RESULT_BACKEND=redis://localhost:6379/1
+
+# LLM Provider (if applicable)
+OPENAI_API_KEY=your-api-key
 ```
 
-Start the production stack:
+---
 
-```bash
-docker-compose -f docker-compose.prod.yml up -d --build
-docker-compose -f docker-compose.prod.yml exec backend alembic upgrade head
+## Database Migration
+
+```powershell
+# Run all pending migrations
+docker-compose exec backend alembic upgrade head
+
+# Connect to PostgreSQL directly
+docker exec -it automation-postgres psql -U postgres -d automation_db
 ```
 
-For HTTPS, point a host at the VPS and terminate TLS with Certbot/Nginx:
+---
 
-```bash
-sudo apt update
-sudo apt install docker.io docker-compose nginx certbot python3-certbot-nginx
-sudo certbot --nginx
+## API Reference
+
+All protected endpoints require a Bearer token in the `Authorization` header.
+
+Base URL: `http://localhost:8000/api/v1`
+
+---
+
+### Health and Readiness
+
+#### List All Endpoints
+
+```powershell
+$response = Invoke-RestMethod -Uri "http://localhost:8000/api/v1/openapi.json"
+
+$response.paths.PSObject.Properties | ForEach-Object {
+    [PSCustomObject]@{
+        Path    = $_.Name
+        Methods = ($_.Value.PSObject.Properties.Name -join ", ").ToUpper()
+    }
+} | Sort-Object Path | Format-Table -AutoSize
+
+Write-Host ""
+Write-Host "Total Endpoints:" (($response.paths.PSObject.Properties.Name).Count)
 ```
 
-## Kubernetes
-
-Build and publish the image, create an `automation-secrets` Kubernetes secret with the environment variables, then apply:
-
-```bash
-kubectl apply -f k8s/
-kubectl get pods
-kubectl get services
-```
-
-## Development
-
-Install dependencies locally:
-
-```bash
-python -m venv .venv
-. .venv/Scripts/activate
-pip install -r requirements.txt
-```
-
-Run checks:
-
-```bash
-ruff check app tests
-pytest -q
-```
-
-Run the API locally:
-
-```bash
-uvicorn app.main:app --reload
-```
-
-Run a worker locally:
-
-```bash
-celery -A app.tasks.celery_app worker --loglevel=INFO -Q workflows
-```
-
-## File Structure
+#### Health Check
 
 ```
-multi-agent-business-automation-system-build/
-├── app/                          # Main application package
-│   ├── main.py                   # FastAPI app initialization & middleware setup
-│   ├── tasks.py                  # Celery task definitions for distributed execution
-│   ├── api/                      # API route handlers
-│   │   ├── v1/
-│   │   │   ├── router.py         # Main router - mounts all v1 endpoints
-│   │   │   ├── auth.py           # Authentication endpoints (login, register, me)
-│   │   │   ├── workflows.py      # Workflow CRUD & execution (trigger, pause, resume)
-│   │   │   ├── agents.py         # Agent registry & execution
-│   │   │   ├── analytics.py      # Analytics & metrics endpoints
-│   │   │   ├── tickets.py        # Support ticket management
-│   │   │   ├── notifications.py  # WebSocket notifications
-│   │   │   └── health.py         # Health & readiness checks
-│   │   └── deps.py               # Dependency injection & security
-│   ├── agents/                   # AI Agent implementations
-│   │   ├── base.py               # Abstract base agent class
-│   │   ├── finance.py            # Finance automation agent
-│   │   ├── analytics.py          # Analytics agent
-│   │   ├── support.py            # Support & ticket agent
-│   │   ├── operations.py         # Operations automation agent
-│   │   ├── registry.py           # Agent registry & factory
-│   │   ├── crew_adapter.py       # CrewAI framework adapter
-│   │   └── autogen_adapter.py    # AutoGen framework adapter
-│   ├── workflows/                # Workflow orchestration (LangGraph)
-│   │   ├── state.py              # Workflow state definitions
-│   │   └── langgraph_orchestrator.py  # LangGraph state machine & routing
-│   ├── services/                 # Business logic layer
-│   │   ├── auth_service.py       # Authentication & JWT logic
-│   │   ├── workflow_service.py   # Workflow management logic
-│   │   ├── agent_service.py      # Agent execution & coordination
-│   │   ├── analytics_service.py  # Analytics aggregation
-│   │   ├── ticket_service.py     # Support ticket processing
-│   │   └── notification_service.py # Real-time notifications
-│   ├── repositories/             # Data access layer (Repository pattern)
-│   │   ├── base.py               # Generic async repository base
-│   │   ├── users.py              # User CRUD operations
-│   │   ├── workflows.py          # Workflow persistence
-│   │   ├── agents.py             # Agent metadata storage
-│   │   ├── tickets.py            # Support ticket storage
-│   │   └── analytics.py          # Analytics data queries
-│   ├── models/                   # SQLAlchemy ORM models
-│   │   ├── user.py               # User model with roles
-│   │   ├── workflow.py           # Workflow definition & execution tracking
-│   │   ├── workflow_task.py      # Workflow task steps
-│   │   ├── agent.py              # Agent metadata
-│   │   ├── support_ticket.py     # Support ticket model
-│   │   ├── analytics_report.py   # Analytics report storage
-│   │   └── enums.py              # Status, role, and type enums
-│   ├── schemas/                  # Pydantic request/response models
-│   │   ├── auth.py               # Auth request/response schemas
-│   │   ├── user.py               # User schemas
-│   │   ├── workflow.py           # Workflow request/response schemas
-│   │   ├── agent.py              # Agent schemas
-│   │   ├── ticket.py             # Ticket schemas
-│   │   ├── analytics.py          # Analytics schemas
-│   │   └── common.py             # Common/shared schemas
-│   ├── core/                     # Configuration & utilities
-│   │   ├── config.py             # Settings from environment
-│   │   ├── security.py           # JWT token & password hashing
-│   │   ├── logging.py            # Structured JSON logging
-│   │   └── exceptions.py         # Custom exception types
-│   ├── db/                       # Database & cache setup
-│   │   ├── session.py            # SQLAlchemy async session factory
-│   │   ├── base.py               # Declarative base & metadata
-│   │   └── redis.py              # Redis connection & utilities
-│   ├── middleware/               # HTTP middleware
-│   │   ├── request_context.py    # Request context tracking
-│   │   └── rate_limit.py         # Rate limiting middleware
-│   ├── monitoring/               # Observability
-│   │   └── metrics.py            # Prometheus metrics definitions
-│   └── utils/                    # Utility functions
-├── alembic/                      # Database migrations (SQLAlchemy)
-│   ├── versions/                 # Migration scripts
-│   └── env.py                    # Migration configuration
-├── tests/                        # Unit & integration tests
-│   ├── test_*.py                 # Test modules
-│   └── conftest.py               # Pytest fixtures
-├── docker/                       # Docker build scripts
-│   └── Dockerfile.*.txt          # Service-specific Dockerfiles (optional)
-├── k8s/                          # Kubernetes manifests
-│   ├── deployment.yaml           # FastAPI deployment
-│   ├── worker.yaml               # Celery worker deployment
-│   ├── service.yaml              # Service exposure
-│   ├── ingress.yaml              # Ingress routing
-│   ├── configmap.yaml            # Environment configuration
-│   └── secrets.yaml              # Secret management
-├── nginx/                        # Nginx reverse proxy config
-│   └── nginx.conf                # Proxy, SSL, routing configuration
-├── prometheus/                   # Prometheus configuration
-│   └── prometheus.yml            # Metrics scrape config
-├── grafana/                      # Grafana provisioning
-│   ├── provisioning/dashboards/  # Dashboard JSON definitions
-│   └── provisioning/datasources/ # Data source configurations
-├── .github/workflows/            # GitHub Actions CI/CD
-│   ├── test.yml                  # Run tests & linting on PR
-│   └── deploy.yml                # Deploy on main branch
-├── docker-compose.yml            # Local dev environment
-├── docker-compose.prod.yml       # Production deployment
-├── Dockerfile                    # FastAPI app Docker image
-├── pyproject.toml                # Python project config & dependencies
-├── requirements.txt              # Python dependencies
-├── alembic.ini                   # Alembic configuration
-├── .env.example                  # Environment template
-├── .gitignore                    # Git ignore rules
-└── README.md                     # This file
+GET /api/v1/health
 ```
 
-## Execution Workflow
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant FastAPI as FastAPI Gateway
-    participant Auth as Auth Service
-    participant WF as Workflow Service
-    participant Orch as LangGraph Orchestrator
-    participant Agent as Agent Service
-    participant Queue as Celery Queue
-    participant DB as PostgreSQL
-    participant Cache as Redis Cache
-    participant Metrics as Prometheus
-    
-    Client->>FastAPI: POST /workflows (create)
-    FastAPI->>Auth: Verify JWT token
-    Auth-->>FastAPI: Token valid
-    FastAPI->>WF: Store workflow definition
-    WF->>DB: Save workflow record
-    DB-->>WF: Workflow ID
-    WF-->>FastAPI: Workflow created (202)
-    FastAPI-->>Client: Return workflow ID
-    
-    Client->>FastAPI: POST /workflows/{id}/trigger (queue execution)
-    FastAPI->>Auth: Verify JWT token
-    FastAPI->>Orch: Queue workflow execution
-    Orch->>Queue: Add task to Celery queue
-    Queue-->>Orch: Task acknowledged
-    Orch->>DB: Update status to QUEUED
-    Orch-->>FastAPI: Task ID
-    FastAPI-->>Client: Return task ID (202)
-    
-    Queue->>Agent: Dequeue & execute workflow
-    Agent->>Orch: Initialize workflow state
-    Orch->>Agent: Route to appropriate agent (Finance/Analytics/Support/Operations)
-    Agent->>Cache: Check cached dependencies
-    Agent->>Agent: Execute business logic
-    Agent->>Metrics: Record execution metrics
-    Agent->>DB: Store execution results
-    DB-->>Agent: Confirmed
-    Agent->>Cache: Update result cache
-    Agent-->>Orch: Execution complete
-    Orch->>DB: Update workflow status to COMPLETED
-    
-    Client->>FastAPI: GET /workflows/{id} (poll status)
-    FastAPI->>DB: Fetch workflow record
-    DB-->>FastAPI: Workflow data + results
-    FastAPI-->>Client: Return workflow data (200)
-    
-    Client->>FastAPI: WS /notifications/workflows/{id}/ws (subscribe)
-    FastAPI->>Cache: Subscribe to Pub/Sub channel
-    Cache-->>FastAPI: Subscription confirmed
-    Agent->>Cache: Publish execution update
-    Cache->>FastAPI: Broadcast update
-    FastAPI-->>Client: Send WebSocket message
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/health"
 ```
 
-## Request Processing Flow
+#### Readiness Check
 
-```mermaid
-graph LR
-    A["HTTP Request"] -->|middleware| B["Request Context<br/>Logging"]
-    B -->|middleware| C["Rate Limit<br/>Check"]
-    C -->|JWT validation| D["Security Layer<br/>Token Extraction"]
-    D -->|authorized| E["Route Handler<br/>Dependency Injection"]
-    E -->|get user| F["Auth Service"]
-    E -->|business logic| G["Workflow/Agent/Ticket<br/>Service"]
-    F -->|query| H["User Repository"]
-    G -->|query/update| I["Workflow/Agent/Ticket<br/>Repository"]
-    H -->|SQL| J["PostgreSQL"]
-    I -->|SQL| J
-    G -->|cache| K["Redis Cache"]
-    G -->|async| L["Celery Queue"]
-    G -->|emit| M["Prometheus Metrics"]
-    J -.->|results| G
-    K -.->|cached data| G
-    G -->|response| N["Response Schema<br/>Validation"]
-    N -->|success| O["HTTP Response 200"]
-    C -->|rate limited| P["HTTP Response 429"]
-    D -->|unauthorized| Q["HTTP Response 401"]
-    E -->|validation error| R["HTTP Response 422"]
+```
+GET /api/v1/ready
 ```
 
-## Agent Execution Flow
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/ready"
+```
+
+---
+
+### Authentication
+
+#### Register a New User
+
+```
+POST /api/v1/auth/register
+```
+
+Available roles: `admin`, `manager`, `analyst`, `support_executive`
+
+```powershell
+$registerBody = @{
+    name     = "User"
+    email    = "user@example.com"
+    password = "Password123!"
+    role     = "admin"
+} | ConvertTo-Json
+
+Invoke-RestMethod `
+    -Uri "http://localhost:8000/api/v1/auth/register" `
+    -Method Post `
+    -ContentType "application/json" `
+    -Body $registerBody
+```
+
+#### Login
+
+```
+POST /api/v1/auth/login
+```
+
+```powershell
+$loginBody = @{
+    email    = "user@example.com"
+    password = "Password123!"
+} | ConvertTo-Json
+
+$response = Invoke-RestMethod `
+    -Uri "http://localhost:8000/api/v1/auth/login" `
+    -Method Post `
+    -ContentType "application/json" `
+    -Body $loginBody
+
+$token = $response.access_token
+$token
+```
+
+> Store `$token` — it is required for all subsequent requests.
+
+#### Verify Current Session
+
+```
+GET /api/v1/auth/me
+```
+
+```powershell
+Invoke-RestMethod `
+    -Uri "http://localhost:8000/api/v1/auth/me" `
+    -Headers @{ Authorization = "Bearer $token" }
+```
+
+---
+
+### Workflows
+
+#### List All Workflows
+
+```
+GET /api/v1/workflows
+```
+
+```powershell
+Invoke-RestMethod `
+    -Uri "http://localhost:8000/api/v1/workflows" `
+    -Method Get `
+    -Headers @{ Authorization = "Bearer $token" }
+```
+
+---
+
+#### Create Workflow
+
+```
+POST /api/v1/workflows
+```
+
+**Finance**
+
+```powershell
+$body = @{
+    workflow_name = "Monthly Expense Analysis"
+    workflow_type = "finance"
+    input_payload = @{
+        expenses = @(
+            @{ department = "Engineering"; amount = 50000 }
+            @{ department = "Marketing";   amount = 25000 }
+            @{ department = "Operations";  amount = 15000 }
+        )
+    }
+} | ConvertTo-Json -Depth 10
+
+$financeWorkflow   = Invoke-RestMethod `
+    -Uri "http://localhost:8000/api/v1/workflows" `
+    -Method Post `
+    -Headers @{ Authorization = "Bearer $token" } `
+    -ContentType "application/json" `
+    -Body $body
+
+$financeWorkflowId = $financeWorkflow.id
+$financeWorkflowId
+```
+
+**Analytics**
+
+```powershell
+$body = @{
+    workflow_name = "Analytics Test"
+    workflow_type = "analytics"
+    input_payload = @{
+        sales = @(120000, 135000, 142000)
+    }
+} | ConvertTo-Json -Depth 10
+
+$analyticsWorkflow   = Invoke-RestMethod `
+    -Uri "http://localhost:8000/api/v1/workflows" `
+    -Method Post `
+    -Headers @{ Authorization = "Bearer $token" } `
+    -ContentType "application/json" `
+    -Body $body
+
+$analyticsWorkflowId = $analyticsWorkflow.id
+$analyticsWorkflowId
+```
+
+**Support**
+
+```powershell
+$body = @{
+    workflow_name = "Support Test"
+    workflow_type = "support"
+    input_payload = @{
+        issue = "Unable to login after password reset"
+    }
+} | ConvertTo-Json -Depth 10
+
+$supportWorkflow   = Invoke-RestMethod `
+    -Uri "http://localhost:8000/api/v1/workflows" `
+    -Method Post `
+    -Headers @{ Authorization = "Bearer $token" } `
+    -ContentType "application/json" `
+    -Body $body
+
+$supportWorkflowId = $supportWorkflow.id
+$supportWorkflowId
+```
+
+**Operations**
+
+```powershell
+$body = @{
+    workflow_name = "Operations Test"
+    workflow_type = "operations"
+    input_payload = @{
+        tasks = @("Generate Report", "Send Email", "Create Dashboard")
+    }
+} | ConvertTo-Json -Depth 10
+
+$operationsWorkflow   = Invoke-RestMethod `
+    -Uri "http://localhost:8000/api/v1/workflows" `
+    -Method Post `
+    -Headers @{ Authorization = "Bearer $token" } `
+    -ContentType "application/json" `
+    -Body $body
+
+$operationsWorkflowId = $operationsWorkflow.id
+$operationsWorkflowId
+```
+
+---
+
+#### Get a Workflow
+
+```
+GET /api/v1/workflows/{workflow_id}
+```
+
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/workflows/$financeWorkflowId"   -Headers @{ Authorization = "Bearer $token" }
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/workflows/$analyticsWorkflowId" -Headers @{ Authorization = "Bearer $token" }
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/workflows/$supportWorkflowId"   -Headers @{ Authorization = "Bearer $token" }
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/workflows/$operationsWorkflowId"-Headers @{ Authorization = "Bearer $token" }
+```
+
+---
+
+#### Update a Workflow
+
+```
+PUT /api/v1/workflows/{workflow_id}
+```
+
+```powershell
+$body = @{
+    workflow_name = "Updated Expense Analysis"
+    workflow_type = "finance"
+    input_payload = @{
+        expenses = @(
+            @{ department = "Engineering"; amount = 75000 }
+            @{ department = "Marketing";   amount = 35000 }
+        )
+    }
+} | ConvertTo-Json -Depth 10
+
+Invoke-RestMethod `
+    -Uri "http://localhost:8000/api/v1/workflows/$financeWorkflowId" `
+    -Method Put `
+    -Headers @{ Authorization = "Bearer $token" } `
+    -ContentType "application/json" `
+    -Body $body
+```
+
+---
+
+#### Delete a Workflow
+
+```
+DELETE /api/v1/workflows/{workflow_id}
+```
+
+Create a duplicate to safely test deletion:
+
+```powershell
+$body = @{
+    workflow_name = "Monthly Expense Analysis"
+    workflow_type = "finance"
+    input_payload = @{
+        expenses = @(
+            @{ department = "Engineering"; amount = 50000 }
+            @{ department = "Marketing";   amount = 25000 }
+            @{ department = "Operations";  amount = 15000 }
+        )
+    }
+} | ConvertTo-Json -Depth 10
+
+$financeWorkflow     = Invoke-RestMethod `
+    -Uri "http://localhost:8000/api/v1/workflows" `
+    -Method Post `
+    -Headers @{ Authorization = "Bearer $token" } `
+    -ContentType "application/json" `
+    -Body $body
+
+$duplicateWorkflowId = $financeWorkflow.id
+$duplicateWorkflowId
+```
+
+Delete it:
+
+```powershell
+Invoke-RestMethod `
+    -Uri "http://localhost:8000/api/v1/workflows/$duplicateWorkflowId" `
+    -Method Delete `
+    -Headers @{ Authorization = "Bearer $token" }
+```
+
+---
+
+#### Trigger a Workflow (Async)
+
+```
+POST /api/v1/workflows/{workflow_id}/trigger
+```
+
+Queues the workflow as a Celery job and returns immediately. Status transitions: `PENDING -> RUNNING -> COMPLETED` or `FAILED`.
+
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/workflows/$financeWorkflowId/trigger"    -Method Post -Headers @{ Authorization = "Bearer $token" }
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/workflows/$analyticsWorkflowId/trigger"  -Method Post -Headers @{ Authorization = "Bearer $token" }
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/workflows/$supportWorkflowId/trigger"    -Method Post -Headers @{ Authorization = "Bearer $token" }
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/workflows/$operationsWorkflowId/trigger" -Method Post -Headers @{ Authorization = "Bearer $token" }
+```
+
+---
+
+#### Execute a Workflow (Synchronous)
+
+```
+POST /api/v1/workflows/{workflow_id}/execute
+```
+
+Runs the workflow inline and blocks until a result is returned.
+
+| Mode      | Behavior                                   |
+|-----------|--------------------------------------------|
+| `/trigger` | Enqueues in Celery, returns immediately   |
+| `/execute` | Runs now, waits for result, returns result |
+
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/workflows/$financeWorkflowId/execute"    -Method Post -Headers @{ Authorization = "Bearer $token" }
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/workflows/$analyticsWorkflowId/execute"  -Method Post -Headers @{ Authorization = "Bearer $token" }
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/workflows/$supportWorkflowId/execute"    -Method Post -Headers @{ Authorization = "Bearer $token" }
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/workflows/$operationsWorkflowId/execute" -Method Post -Headers @{ Authorization = "Bearer $token" }
+```
+
+Fetch the result immediately after execution:
+
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/workflows/$analyticsWorkflowId" -Headers @{ Authorization = "Bearer $token" }
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/workflows/$supportWorkflowId"   -Headers @{ Authorization = "Bearer $token" }
+```
+
+---
+
+#### Pause a Workflow
+
+```
+POST /api/v1/workflows/{workflow_id}/pause
+```
+
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/workflows/$financeWorkflowId/pause"    -Method Post -Headers @{ Authorization = "Bearer $token" }
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/workflows/$analyticsWorkflowId/pause"  -Method Post -Headers @{ Authorization = "Bearer $token" }
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/workflows/$supportWorkflowId/pause"    -Method Post -Headers @{ Authorization = "Bearer $token" }
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/workflows/$operationsWorkflowId/pause" -Method Post -Headers @{ Authorization = "Bearer $token" }
+```
+
+Verify pause state:
+
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/workflows/$operationsWorkflowId" -Headers @{ Authorization = "Bearer $token" }
+```
+
+---
+
+#### Resume a Workflow
+
+```
+POST /api/v1/workflows/{workflow_id}/resume
+```
+
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/workflows/$financeWorkflowId/resume"    -Method Post -Headers @{ Authorization = "Bearer $token" }
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/workflows/$analyticsWorkflowId/resume"  -Method Post -Headers @{ Authorization = "Bearer $token" }
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/workflows/$supportWorkflowId/resume"    -Method Post -Headers @{ Authorization = "Bearer $token" }
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/workflows/$operationsWorkflowId/resume" -Method Post -Headers @{ Authorization = "Bearer $token" }
+```
+
+Verify resume state:
+
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/workflows/$operationsWorkflowId" -Headers @{ Authorization = "Bearer $token" }
+```
+
+---
+
+#### Retry a Workflow
+
+```
+POST /api/v1/workflows/{workflow_id}/retry
+```
+
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/workflows/$financeWorkflowId/retry"    -Method Post -Headers @{ Authorization = "Bearer $token" }
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/workflows/$analyticsWorkflowId/retry"  -Method Post -Headers @{ Authorization = "Bearer $token" }
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/workflows/$supportWorkflowId/retry"    -Method Post -Headers @{ Authorization = "Bearer $token" }
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/workflows/$operationsWorkflowId/retry" -Method Post -Headers @{ Authorization = "Bearer $token" }
+```
+
+Print the workflow ID for PostgreSQL lookup:
+
+```powershell
+Write-Host $operationsWorkflowId
+```
+
+---
+
+### Agents
+
+#### List All Agents
+
+```
+GET /api/v1/agents
+```
+
+```powershell
+$agents = Invoke-RestMethod `
+    -Uri "http://localhost:8000/api/v1/agents" `
+    -Headers @{ Authorization = "Bearer $token" }
+
+$financeAgentId    = ($agents | Where-Object { $_.agent_type -eq "finance" }).id
+$supportAgentId    = ($agents | Where-Object { $_.agent_type -eq "support" }).id
+$operationsAgentId = ($agents | Where-Object { $_.agent_type -eq "operations" }).id
+$analyticsAgentId  = ($agents | Where-Object { $_.agent_type -eq "analytics" }).id
+
+Write-Host "Finance Agent ID:    $financeAgentId"
+Write-Host "Support Agent ID:    $supportAgentId"
+Write-Host "Operations Agent ID: $operationsAgentId"
+Write-Host "Analytics Agent ID:  $analyticsAgentId"
+```
+
+---
+
+#### Get a Specific Agent
+
+```
+GET /api/v1/agents/{agent_id}
+```
+
+```powershell
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/agents/$financeAgentId"    -Headers @{ Authorization = "Bearer $token" }
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/agents/$supportAgentId"    -Headers @{ Authorization = "Bearer $token" }
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/agents/$operationsAgentId" -Headers @{ Authorization = "Bearer $token" }
+Invoke-RestMethod -Uri "http://localhost:8000/api/v1/agents/$analyticsAgentId"  -Headers @{ Authorization = "Bearer $token" }
+```
+
+---
+
+#### Execute an Agent Directly
+
+```
+POST /api/v1/agents/execute
+```
+
+**Finance Agent**
+
+```powershell
+Invoke-RestMethod `
+    -Uri "http://localhost:8000/api/v1/agents/execute" `
+    -Method Post `
+    -Headers @{ Authorization = "Bearer $token" } `
+    -ContentType "application/json" `
+    -Body (@{
+        agent_type = "finance"
+        task       = "Analyze monthly department expenses"
+        context    = @{
+            expenses = @(
+                @{ department = "Engineering"; amount = 50000 }
+                @{ department = "Marketing";   amount = 25000 }
+                @{ department = "Operations";  amount = 15000 }
+            )
+        }
+    } | ConvertTo-Json -Depth 10)
+```
+
+**Analytics Agent**
+
+```powershell
+Invoke-RestMethod `
+    -Uri "http://localhost:8000/api/v1/agents/execute" `
+    -Method Post `
+    -Headers @{ Authorization = "Bearer $token" } `
+    -ContentType "application/json" `
+    -Body (@{
+        agent_type = "analytics"
+        task       = "Analyze sales trends"
+        context    = @{
+            sales = @(120000, 135000, 142000)
+        }
+    } | ConvertTo-Json -Depth 10)
+```
+
+**Support Agent**
+
+```powershell
+Invoke-RestMethod `
+    -Uri "http://localhost:8000/api/v1/agents/execute" `
+    -Method Post `
+    -Headers @{ Authorization = "Bearer $token" } `
+    -ContentType "application/json" `
+    -Body (@{
+        agent_type = "support"
+        task       = "Handle customer login issue"
+        context    = @{
+            issue = "Unable to login after password reset"
+        }
+    } | ConvertTo-Json -Depth 10)
+```
+
+**Operations Agent — String Tasks**
+
+```powershell
+Invoke-RestMethod `
+    -Uri "http://localhost:8000/api/v1/agents/execute" `
+    -Method Post `
+    -Headers @{ Authorization = "Bearer $token" } `
+    -ContentType "application/json" `
+    -Body (@{
+        agent_type = "operations"
+        task       = "Optimize workflow schedule"
+        context    = @{
+            tasks = @("Generate Report", "Send Email", "Create Dashboard")
+        }
+    } | ConvertTo-Json -Depth 10)
+```
+
+**Operations Agent — Priority Tasks**
+
+```powershell
+Invoke-RestMethod `
+    -Uri "http://localhost:8000/api/v1/agents/execute" `
+    -Method Post `
+    -Headers @{ Authorization = "Bearer $token" } `
+    -ContentType "application/json" `
+    -Body (@{
+        agent_type = "operations"
+        task       = "Optimize workflow schedule"
+        context    = @{
+            tasks = @(
+                @{ name = "Generate Report";    priority = "high" }
+                @{ name = "Send Email";         priority = "medium" }
+                @{ name = "Create Dashboard";   priority = "low" }
+            )
+        }
+    } | ConvertTo-Json -Depth 10)
+```
+
+---
+
+### Analytics
+
+#### Analytics Overview
+
+```
+GET /api/v1/analytics/overview
+```
+
+```powershell
+Invoke-RestMethod `
+    -Uri "http://localhost:8000/api/v1/analytics/overview" `
+    -Headers @{ Authorization = "Bearer $token" } `
+    | ConvertTo-Json -Depth 10
+```
+
+#### Workflow Metrics
+
+```
+GET /api/v1/analytics/workflow-metrics
+```
+
+```powershell
+Invoke-RestMethod `
+    -Uri "http://localhost:8000/api/v1/analytics/workflow-metrics" `
+    -Headers @{ Authorization = "Bearer $token" } `
+    | ConvertTo-Json -Depth 10
+```
+
+#### Agent Performance
+
+```
+GET /api/v1/analytics/agent-performance
+```
+
+```powershell
+Invoke-RestMethod `
+    -Uri "http://localhost:8000/api/v1/analytics/agent-performance" `
+    -Headers @{ Authorization = "Bearer $token" } `
+    | ConvertTo-Json -Depth 10
+```
+
+---
+
+### Support Tickets
+
+#### List All Tickets
+
+```
+GET /api/v1/tickets
+```
+
+```powershell
+Invoke-RestMethod `
+    -Uri "http://localhost:8000/api/v1/tickets" `
+    -Headers @{ Authorization = "Bearer $token" } `
+    | Format-Table -AutoSize
+```
+
+---
+
+#### Create a Ticket
+
+```
+POST /api/v1/tickets
+```
+
+**Ticket 1 — Login Issue**
+
+```powershell
+$body = @{
+    customer_name  = "John Smith"
+    customer_email = "john.smith@example.com"
+    issue          = "Unable to login after password reset"
+} | ConvertTo-Json
+
+$ticket1   = Invoke-RestMethod `
+    -Uri "http://localhost:8000/api/v1/tickets" `
+    -Method Post `
+    -Headers @{ Authorization = "Bearer $token" } `
+    -ContentType "application/json" `
+    -Body $body
+
+$ticket1Id = $ticket1.id
+Write-Host "Ticket 1 ID: $ticket1Id"
+```
+
+**Ticket 2 — Payment Issue**
+
+```powershell
+$body = @{
+    customer_name  = "Sarah Johnson"
+    customer_email = "sarah.johnson@example.com"
+    issue          = "Payment was deducted twice but the order was not created"
+} | ConvertTo-Json
+
+$ticket2   = Invoke-RestMethod `
+    -Uri "http://localhost:8000/api/v1/tickets" `
+    -Method Post `
+    -Headers @{ Authorization = "Bearer $token" } `
+    -ContentType "application/json" `
+    -Body $body
+
+$ticket2Id = $ticket2.id
+Write-Host "Ticket 2 ID: $ticket2Id"
+```
+
+**Ticket 3 — Dashboard Issue**
+
+```powershell
+$body = @{
+    customer_name  = "Michael Brown"
+    customer_email = "michael.brown@example.com"
+    issue          = "Unable to access the analytics dashboard after the recent update"
+} | ConvertTo-Json
+
+$ticket3   = Invoke-RestMethod `
+    -Uri "http://localhost:8000/api/v1/tickets" `
+    -Method Post `
+    -Headers @{ Authorization = "Bearer $token" } `
+    -ContentType "application/json" `
+    -Body $body
+
+$ticket3Id = $ticket3.id
+Write-Host "Ticket 3 ID: $ticket3Id"
+```
+
+---
+
+#### Update a Ticket
+
+```
+PUT /api/v1/tickets/{ticket_id}
+```
+
+**Update Ticket 1**
+
+```powershell
+$body = @{
+    customer_name  = "John Smith"
+    customer_email = "john.smith@example.com"
+    issue          = "Unable to login after password reset. Error: Invalid token."
+    status         = "in_progress"
+    assigned_agent = "support-agent-1"
+} | ConvertTo-Json
+
+Invoke-RestMethod `
+    -Uri "http://localhost:8000/api/v1/tickets/$ticket1Id" `
+    -Method Put `
+    -Headers @{ Authorization = "Bearer $token" } `
+    -ContentType "application/json" `
+    -Body $body
+```
+
+**Update Ticket 2**
+
+```powershell
+$body = @{
+    customer_name  = "Sarah Johnson"
+    customer_email = "sarah.johnson@example.com"
+    issue          = "Payment deducted twice. Customer requesting refund."
+    status         = "resolved"
+    assigned_agent = "finance-agent-1"
+} | ConvertTo-Json
+
+Invoke-RestMethod `
+    -Uri "http://localhost:8000/api/v1/tickets/$ticket2Id" `
+    -Method Put `
+    -Headers @{ Authorization = "Bearer $token" } `
+    -ContentType "application/json" `
+    -Body $body
+```
+
+**Update Ticket 3**
+
+```powershell
+$body = @{
+    customer_name  = "Michael Brown"
+    customer_email = "michael.brown@example.com"
+    issue          = "Analytics dashboard loads slowly after update."
+    status         = "in_progress"
+    assigned_agent = "operations-agent-1"
+} | ConvertTo-Json
+
+Invoke-RestMethod `
+    -Uri "http://localhost:8000/api/v1/tickets/$ticket3Id" `
+    -Method Put `
+    -Headers @{ Authorization = "Bearer $token" } `
+    -ContentType "application/json" `
+    -Body $body
+```
+
+---
+
+### Prometheus Metrics
+
+```
+GET /metrics
+```
+
+```powershell
+Invoke-WebRequest `
+    -Uri "http://localhost:8000/metrics" `
+    -UseBasicParsing `
+    | Select-Object -ExpandProperty Content
+```
+
+Grafana is available at `http://localhost:3000` (default credentials: `admin / admin`).
+
+---
+
+## Database Verification
+
+Connect to PostgreSQL:
+
+```powershell
+docker exec -it automation-postgres psql -U postgres -d automation_db
+```
+
+**Workflows**
+
+```sql
+SELECT * FROM workflows;
+
+SELECT workflow_name, workflow_type, status
+FROM workflows;
+```
+
+**Workflow Tasks**
+
+```sql
+-- Count tasks for a specific workflow
+SELECT
+    workflow_id,
+    COUNT(*) AS task_count
+FROM workflow_tasks
+WHERE workflow_id = 'PASTE_WORKFLOW_ID_HERE'
+GROUP BY workflow_id;
+
+-- Check agent assigned to a workflow
+SELECT
+    workflow_id,
+    assigned_agent,
+    status
+FROM workflow_tasks
+WHERE workflow_id = 'PASTE_WORKFLOW_ID_HERE';
+```
+
+**Agents**
+
+```sql
+SELECT
+    id,
+    agent_name,
+    agent_type,
+    status,
+    capabilities,
+    last_active
+FROM agents;
+
+-- Inspect a single agent
+SELECT
+    id,
+    agent_name,
+    agent_type,
+    status,
+    capabilities,
+    last_active
+FROM agents
+WHERE id = 'PASTE_AGENT_ID_HERE';
+```
+
+**Support Tickets**
+
+```sql
+SELECT
+    id,
+    customer_name,
+    issue,
+    sentiment,
+    assigned_agent,
+    status,
+    created_at
+FROM support_tickets;
+
+-- Inspect a single ticket
+SELECT
+    id,
+    customer_name,
+    status,
+    assigned_agent,
+    issue
+FROM support_tickets
+WHERE id = 'PASTE_TICKET_ID_HERE';
+```
+
+---
+
+## Workflow Lifecycle
 
 ```mermaid
 stateDiagram-v2
-    [*] --> Initialize
-    Initialize --> RouteAgent: Determine agent type
-    
-    RouteAgent --> Finance: workflow_type == 'finance'
-    RouteAgent --> Analytics: workflow_type == 'analytics'
-    RouteAgent --> Support: workflow_type == 'support'
-    RouteAgent --> Operations: workflow_type == 'operations'
-    
-    Finance --> LoadContext: Load workflow input<br/>& context data
-    Analytics --> LoadContext
-    Support --> LoadContext
-    Operations --> LoadContext
-    
-    LoadContext --> ExecuteAgent: Send to LLM or<br/>local fallback
-    ExecuteAgent --> CrewAI: Framework: CrewAI
-    ExecuteAgent --> AutoGen: Framework: AutoGen
-    ExecuteAgent --> Deterministic: Framework: Local<br/>Fallback
-    
-    CrewAI --> ProcessOutput: Parse results
-    AutoGen --> ProcessOutput
-    Deterministic --> ProcessOutput
-    
-    ProcessOutput --> UpdateDB: Persist execution<br/>results
-    UpdateDB --> PublishMetrics: Record metrics
-    PublishMetrics --> Notify: Send WebSocket<br/>notification
-    Notify --> [*]
+    [*] --> PENDING
+    PENDING --> RUNNING
+    RUNNING --> COMPLETED
+    RUNNING --> FAILED
+    RUNNING --> PAUSED
+    PAUSED --> RUNNING : resume
+    FAILED --> RUNNING : retry
+    COMPLETED --> RUNNING : retry
+    COMPLETED --> [*]
 ```
 
-## Notes on AI Frameworks
+| Action    | Description                                                  |
+|-----------|--------------------------------------------------------------|
+| trigger   | Enqueues the workflow in Celery and returns immediately       |
+| execute   | Runs the workflow synchronously and blocks for the result    |
+| pause     | Suspends an active workflow                                  |
+| resume    | Continues a paused workflow                                  |
+| retry     | Re-executes a failed or completed workflow from scratch       |
 
-The platform exposes explicit integration points for:
+---
 
-- **LangGraph**: workflow state transitions, conditional routing, and parallel execution
-- **CrewAI**: collaborative business-agent crews with role-based delegation
-- **AutoGen**: conversational multi-agent execution with dynamic conversation
-- **LangChain**: dependency included for future tool/RAG integrations
+## Agent Assignment Map
 
-The code includes deterministic fallbacks so the backend remains testable and deployable even before external LLM credentials or production agent prompts are configured.
+Each workflow type dispatches to a specific set of agents:
 
+| Workflow Type | Agents Assigned                  |
+|---------------|----------------------------------|
+| finance       | Finance Agent, Analytics Agent   |
+| analytics     | Analytics Agent                  |
+| support       | Support Agent, Operations Agent  |
+| operations    | Operations Agent                 |
+
+To inspect agent assignments for a specific workflow:
+
+```sql
+SELECT
+    workflow_id,
+    assigned_agent,
+    status
+FROM workflow_tasks
+WHERE workflow_id = 'PASTE_WORKFLOW_ID_HERE';
+```
